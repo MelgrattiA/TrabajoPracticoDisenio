@@ -31,4 +31,7 @@ public class Puesto {
 
     @Column(name = "empresa")
     private String empresa;
+
+    @Column(name = "eliminado", nullable = false)
+    private Boolean eliminado;
 }
