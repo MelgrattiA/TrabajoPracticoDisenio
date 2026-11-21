@@ -19,9 +19,9 @@ public interface PreguntaDAO extends JpaRepository <Pregunta, Integer> {
         JOIN f.competencia c
     WHERE p.eliminado = false AND
     (:competencia IS NOT NULL OR :factor IS NOT NULL OR :pregunta IS NOT NULL)
-    AND (:competencia IS NULL OR (:competencia = c.nombre))
-    AND (:factor IS NULL OR (:factor = f.nombre))
-    AND (:pregunta IS NULL OR (:pregunta = p.pregunta))
+    AND (:competencia IS NULL OR LOWER(c.nombre) LIKE LOWER(CONCAT('%', :competencia, '%')))
+    AND (:factor IS NULL OR LOWER(f.nombre) LIKE LOWER(CONCAT('%', :factor ,'%')))
+    AND (:pregunta IS NULL OR LOWER(p.pregunta) LIKE LOWER(CONCAT('%', :pregunta, '%')))
     """)
     List<Pregunta> buscarPreguntas(
     @Param("competencia") String competencia, 
