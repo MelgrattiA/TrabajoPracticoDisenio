@@ -27,7 +27,7 @@ public class PreguntaController {
             try {
                 List<PreguntaDTO> preguntaLista = gestorPregunta.buscarPreguntas(competencia, factor, pregunta);
                 return ResponseEntity.ok(preguntaLista);
-            } catch (IllegalAccessError e) {
+            } catch (IllegalArgumentException e) {
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
         }
