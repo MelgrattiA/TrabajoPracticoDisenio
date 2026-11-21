@@ -52,4 +52,7 @@ public class Pregunta {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_opcion_respuesta", nullable = false)
     private OpcionRespuesta opcionRespuesta;
+
+    @Column(name = "eliminado", nullable = false)
+    private Boolean eliminado;
 }

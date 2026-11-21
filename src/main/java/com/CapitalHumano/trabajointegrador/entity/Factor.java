@@ -43,4 +43,7 @@ public class Factor {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "codigo_competencia", nullable = false)
     private Competencia competencia;
+
+    @Column(name = "eliminado", nullable = false)
+    private Boolean eliminado;
 }

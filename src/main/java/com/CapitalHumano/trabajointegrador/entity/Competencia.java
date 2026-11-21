@@ -28,4 +28,7 @@ public class Competencia {
 
     @Column(name = "descripcion")
     private String descripcion;
+
+    @Column(name = "eliminado", nullable = false)
+    private Boolean eliminado;
 }
