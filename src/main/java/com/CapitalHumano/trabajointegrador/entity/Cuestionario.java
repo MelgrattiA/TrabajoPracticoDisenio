@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Id;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Cuestionario {
+
+    private static final int MAXIMO_ACCESOS = 3;
+    private static final Duration TIEMPO_MAXIMO = Duration.ofDays(2);
 
     @Id
     @Column(name = "clave", nullable = false)
@@ -62,4 +66,24 @@ public class Cuestionario {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "estado_id", nullable = false)
     private EstadoCuestionario estado;
+
+    public boolean verificarAcceso() {
+
+        //si  la cantidad de accesos es null, se pone en 0
+        if (cantidadAccesos == null) {
+            cantidadAccesos = 0;
+        }
+
+        return cantidadAccesos < MAXIMO_ACCESOS;
+    }
+
+    public boolean verificarTiemposLimites() {
+        if (fechaInicio == null) {
+            return true;
+        }
+
+        Duration tiempoTranscurrido =
+                Duration.between(fechaInicio, LocalDateTime.now());
+        return tiempoTranscurrido.compareTo(TIEMPO_MAXIMO) <= 0;
+    }
 }
