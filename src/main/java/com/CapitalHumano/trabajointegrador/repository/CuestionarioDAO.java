@@ -1,6 +1,7 @@
 package com.CapitalHumano.trabajointegrador.repository;
 
 import java.util.Optional;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,4 +21,14 @@ public interface CuestionarioDAO extends JpaRepository<Cuestionario, String> {
             """)
     Optional<Cuestionario> buscarActivoOEnProceso(
             @Param("nroCandidato") Integer nroCandidato);
+            
+    @Query("""
+        SELECT c.candidato.nroCandidato
+        FROM Cuestionario c
+        WHERE c.candidato.nroCandidato IN :listaID
+        AND (c.estado.nombre) IN ('Activo', 'En Proceso')
+    """)
+    List <Integer> buscarActivos(
+        @Param ("listaID") List <Integer> listaIdCandidatos
+    );
 }
