@@ -12,6 +12,9 @@ import com.CapitalHumano.trabajointegrador.entity.Pregunta;
 @Repository 
 public interface PreguntaDAO extends JpaRepository <Pregunta, Integer> {
 
+    List<Pregunta> findByFactorCodigoAndEliminadoFalse(
+            Integer codigoFactor);
+
     @Query("""
     SELECT p
     FROM Pregunta p 
@@ -31,4 +34,3 @@ public interface PreguntaDAO extends JpaRepository <Pregunta, Integer> {
     
 } 
     
-
