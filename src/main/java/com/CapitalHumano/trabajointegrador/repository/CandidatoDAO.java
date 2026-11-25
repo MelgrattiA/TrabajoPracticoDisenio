@@ -14,7 +14,7 @@ public interface CandidatoDAO extends JpaRepository <Candidato, Integer> {
 
     @Query("""
         SELECT c
-        FROM candidato c
+        FROM Candidato c
         WHERE c.eliminado = false 
         AND ((:nro IS NOT NULL) OR (:nombre IS NOT NULL) OR (:apellido IS NOT NULL))
         AND (:nro IS NULL OR (c.nroCandidato) = :nro)
