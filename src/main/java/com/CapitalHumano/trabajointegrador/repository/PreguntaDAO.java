@@ -32,5 +32,6 @@ public interface PreguntaDAO extends JpaRepository <Pregunta, Integer> {
     @Param("pregunta") String pregunta);
     
     
+    
 } 
     

@@ -15,12 +15,23 @@ import com.CapitalHumano.trabajointegrador.entity.Competencia;
 public interface CaracteristicaPuestoDAO
         extends JpaRepository<CaracteristicaPuesto, CaracteristicaPuestoId> {
 
-    @Query("""
+        @Query("""
             SELECT cp.competencia
             FROM CaracteristicaPuesto cp
             WHERE cp.puesto.codigoPuesto = :codigoPuesto
               AND cp.competencia.eliminado = false
             """)
-    List<Competencia> buscarCompetenciasEvaluadas(
+        List<Competencia> buscarCompetenciasEvaluadas(
             @Param("codigoPuesto") String codigoPuesto);
+        
+        @Query("""
+                SELECT cp
+                FROM CaracteristicaPuesto cp
+                WHERE cp.puesto = :codigoPuesto
+                AND cp.competencia.eliminado = false
+        """)
+        List<CaracteristicaPuesto> buscarCaracteristicaPuesto(
+                @Param("codigoPuesto") String codigoPuesto
+        );
+
 }
