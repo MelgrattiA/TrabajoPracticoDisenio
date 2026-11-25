@@ -28,7 +28,7 @@ public interface CuestionarioDAO extends JpaRepository<Cuestionario, String> {
         WHERE c.candidato.nroCandidato IN :listaID
         AND (c.estado.nombre) IN ('Activo', 'En Proceso')
     """)
-    List <Integer> buscarActivos(
+    List <Integer> buscarActivosOenProceso(
         @Param ("listaID") List <Integer> listaIdCandidatos
     );
 }

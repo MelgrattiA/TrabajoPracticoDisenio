@@ -249,4 +249,8 @@ public class GestorCuestionario {
                 .accion(registroDTO.getAccion())
                 .build());
     }
+
+    public List<Integer> buscarActivoOEnProcesoLista(List<Integer> listaIdCandidatos){
+        return cuestionarioDAO.buscarActivosOenProceso(listaIdCandidatos);
+    }
 }
