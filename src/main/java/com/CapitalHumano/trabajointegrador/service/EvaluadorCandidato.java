@@ -54,8 +54,7 @@ public class EvaluadorCandidato {
     }
 
     public List<PuestoEvaluadoDTO> obtenerPuestos(){
-        List<Puesto> puestosLista = puestoDAO.findAll();
-
+        List<Puesto> puestosLista = puestoDAO.findByEliminadoFalse();
         ArrayList<PuestoEvaluadoDTO> puestoEvalDTO = new ArrayList<PuestoEvaluadoDTO>();
 
         for(Puesto p: puestosLista){

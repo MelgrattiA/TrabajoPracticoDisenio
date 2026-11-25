@@ -9,5 +9,5 @@ import com.CapitalHumano.trabajointegrador.entity.Puesto;
 
 @Repository 
 public interface PuestoDAO extends JpaRepository <Puesto, String>{
-    List<Puesto> findAll();
+    List<Puesto> findByEliminadoFalse();
 }
