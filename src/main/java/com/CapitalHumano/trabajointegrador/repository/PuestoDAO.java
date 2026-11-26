@@ -9,9 +9,12 @@ import org.springframework.stereotype.Repository;
 
 import com.CapitalHumano.trabajointegrador.entity.Puesto;
 
-@Repository 
-public interface PuestoDAO extends JpaRepository <Puesto, String>{
+@Repository
+public interface PuestoDAO extends JpaRepository<Puesto, String> {
+
     List<Puesto> findAll();
+
+    List<Puesto> findByEliminadoFalse();
 
     @Query(value = """
             SELECT p.codigo_puesto AS "codigoPuesto",

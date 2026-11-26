@@ -8,4 +8,5 @@ import lombok.Getter;
 public class PuestoEvaluadoDTO {
     private String nombre;
     private String empresa;
+    private String codigo;
 }
