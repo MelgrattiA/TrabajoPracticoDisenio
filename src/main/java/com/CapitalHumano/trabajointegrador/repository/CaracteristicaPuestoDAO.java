@@ -27,7 +27,7 @@ public interface CaracteristicaPuestoDAO
         @Query("""
                 SELECT cp
                 FROM CaracteristicaPuesto cp
-                WHERE cp.puesto = :codigoPuesto
+                WHERE cp.puesto.codigoPuesto = :codigoPuesto
                 AND cp.competencia.eliminado = false
         """)
         List<CaracteristicaPuesto> buscarCaracteristicaPuesto(

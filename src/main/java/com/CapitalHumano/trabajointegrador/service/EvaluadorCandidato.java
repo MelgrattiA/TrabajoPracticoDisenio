@@ -48,8 +48,8 @@ public class EvaluadorCandidato {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public List<CandidatoDTO> buscarCandidato(Integer nroCandidato, String nombre, String apellido){
-        String nombreFiltro = (nombre == null || nombre.isBlank()) ? null : nombre.trim();
-        String apellidoFiltro = (apellido == null || apellido.isBlank()) ? null : apellido.trim();
+        String nombreFiltro = (nombre == null || nombre.isBlank()) ? null : nombre.trim().toLowerCase();
+        String apellidoFiltro = (apellido == null || apellido.isBlank()) ? null : apellido.trim().toLowerCase();
 
         if (nroCandidato == null && nombreFiltro == null && apellidoFiltro == null) {
             throw new IllegalArgumentException("Debe ingresar al menos un argumento");

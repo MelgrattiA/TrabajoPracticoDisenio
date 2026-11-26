@@ -13,19 +13,18 @@ import java.util.List;
 public interface CandidatoDAO extends JpaRepository <Candidato, Integer> {
 
     @Query("""
-        SELECT c
-        FROM Candidato c
-        WHERE c.eliminado = false 
-        AND ((:nro IS NOT NULL) OR (:nombre IS NOT NULL) OR (:apellido IS NOT NULL))
-        AND (:nro IS NULL OR (c.nroCandidato) = :nro)
-        AND (:nombre IS NULL OR LOWER(c.nombre) = LOWER(:nombre))
-        AND (:apellido IS NULL OR LOWER(c.apellido) = LOWER(:apellido))
+    SELECT c FROM Candidato c
+    WHERE c.eliminado = false
+      AND (:nroCandidato IS NOT NULL OR :nombre IS NOT NULL OR :apellido IS NOT NULL)
+      AND (:nroCandidato IS NULL OR c.nroCandidato = :nroCandidato)
+      AND (:nombre IS NULL OR lower(c.nombre) = :nombre)
+      AND (:apellido IS NULL OR lower(c.apellido) = :apellido)
     """)
     List<Candidato> buscarCandidato(
-        @Param ("nro") Integer nroCandidato,
-        @Param ("nombre") String nombre,
-        @Param ("apellido") String apellido 
-    );
+        @Param("nroCandidato") Integer nroCandidato,
+        @Param("nombre") String nombre,
+        @Param("apellido") String apellido
+);
 
     List<Candidato> findByNroCandidatoInAndEliminadoFalse(List<Integer> listaNroCandidato);
     
