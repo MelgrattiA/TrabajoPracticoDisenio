@@ -18,6 +18,8 @@ import com.CapitalHumano.trabajointegrador.entity.EstadoCuestionario;
 import com.CapitalHumano.trabajointegrador.entity.Puesto;
 import com.CapitalHumano.trabajointegrador.entity.ResultadoCompetencia;
 import com.CapitalHumano.trabajointegrador.entity.ResultadoCompetenciaId;
+import com.CapitalHumano.trabajointegrador.exception.PuestoNoEncontradoException;
+import com.CapitalHumano.trabajointegrador.exception.PuestoSinCompetenciasException;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -148,8 +150,16 @@ class GestorOrdenMeritoIntegrationTest {
     void rechazaClasificarUnPuestoSinCompetencias() {
         assertThatThrownBy(() ->
                 gestorOrdenMerito.clasificarCuestionariosPorPuesto("P-400"))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(PuestoSinCompetenciasException.class)
                 .hasMessage("El puesto no tiene competencias configuradas");
+    }
+
+    @Test
+    void distingueUnPuestoInexistenteDeUnoSinCompetencias() {
+        assertThatThrownBy(() ->
+                gestorOrdenMerito.generarReporteOrdenMerito("P-999"))
+                .isInstanceOf(PuestoNoEncontradoException.class)
+                .hasMessage("No se encontró el puesto: P-999");
     }
 
     @Test

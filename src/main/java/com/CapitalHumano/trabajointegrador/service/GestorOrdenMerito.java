@@ -18,6 +18,8 @@ import com.CapitalHumano.trabajointegrador.entity.Cuestionario;
 import com.CapitalHumano.trabajointegrador.dto.PuestoOrdenMeritoDTO;
 import com.CapitalHumano.trabajointegrador.dto.ReporteOrdenMeritoDTO;
 import com.CapitalHumano.trabajointegrador.entity.ResultadoCompetencia;
+import com.CapitalHumano.trabajointegrador.exception.PuestoNoEncontradoException;
+import com.CapitalHumano.trabajointegrador.exception.PuestoSinCompetenciasException;
 import com.CapitalHumano.trabajointegrador.repository.CaracteristicaPuestoDAO;
 import com.CapitalHumano.trabajointegrador.repository.CuestionarioDAO;
 import com.CapitalHumano.trabajointegrador.repository.PuestoDAO;
@@ -76,6 +78,7 @@ public class GestorOrdenMerito {
     public ClasificacionCuestionariosDTO clasificarCuestionariosPorPuesto(
             String codigoPuesto) {
         String codigoValidado = validarCodigoPuesto(codigoPuesto);
+        validarPuestoExistente(codigoValidado);
         List<CaracteristicaPuesto> caracteristicas =
                 obtenerCaracteristicasPuesto(codigoValidado);
         validarCaracteristicasConfiguradas(caracteristicas);
@@ -87,6 +90,7 @@ public class GestorOrdenMerito {
     @Transactional(readOnly = true)
     public ReporteOrdenMeritoDTO generarReporteOrdenMerito(String codigoPuesto) {
         String codigoValidado = validarCodigoPuesto(codigoPuesto);
+        validarPuestoExistente(codigoValidado);
         List<CaracteristicaPuesto> caracteristicas =
                 obtenerCaracteristicasPuesto(codigoValidado);
         validarCaracteristicasConfiguradas(caracteristicas);
@@ -232,8 +236,13 @@ public class GestorOrdenMerito {
     private void validarCaracteristicasConfiguradas(
             List<CaracteristicaPuesto> caracteristicas) {
         if (caracteristicas.isEmpty()) {
-            throw new IllegalStateException(
-                    "El puesto no tiene competencias configuradas");
+            throw new PuestoSinCompetenciasException();
+        }
+    }
+
+    private void validarPuestoExistente(String codigoPuesto) {
+        if (!puestoDAO.existsById(codigoPuesto)) {
+            throw new PuestoNoEncontradoException(codigoPuesto);
         }
     }
 
