@@ -15,21 +15,21 @@ public interface PreguntaDAO extends JpaRepository <Pregunta, Integer> {
     List<Pregunta> findByFactorCodigoAndEliminadoFalse(
             Integer codigoFactor);
 
-    @Query("""
-    SELECT p
-    FROM Pregunta p 
-        JOIN p.factor f
-        JOIN f.competencia c
-    WHERE p.eliminado = false AND
-    (:competencia IS NOT NULL OR :factor IS NOT NULL OR :pregunta IS NOT NULL)
-    AND (:competencia IS NULL OR LOWER(c.nombre) LIKE LOWER(CONCAT('%', :competencia, '%')))
-    AND (:factor IS NULL OR LOWER(f.nombre) LIKE LOWER(CONCAT('%', :factor ,'%')))
-    AND (:pregunta IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :pregunta, '%')))
+   @Query("""
+    SELECT p FROM Pregunta p
+    JOIN p.factor f
+    JOIN f.competencia c
+    WHERE p.eliminado = false
+      AND (:competencia IS NOT NULL OR :factor IS NOT NULL OR :nombrePregunta IS NOT NULL)
+      AND (:competencia IS NULL OR lower(c.nombre) LIKE :competencia)
+      AND (:factor IS NULL OR lower(f.nombre) LIKE :factor)
+      AND (:nombrePregunta IS NULL OR lower(p.nombre) LIKE :nombrePregunta)
     """)
     List<Pregunta> buscarPreguntas(
-    @Param("competencia") String competencia, 
-    @Param("factor") String factor,
-    @Param("pregunta") String pregunta);
+        @Param("competencia") String competencia,
+        @Param("factor") String factor,
+        @Param("nombrePregunta") String nombrePregunta
+    );
     
     
     

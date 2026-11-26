@@ -1,31 +1,32 @@
 package com.CapitalHumano.trabajointegrador.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.CapitalHumano.trabajointegrador.repository.PreguntaDAO;
+
+import lombok.RequiredArgsConstructor;
+
 import com.CapitalHumano.trabajointegrador.dto.PreguntaDTO;
 import com.CapitalHumano.trabajointegrador.entity.Pregunta;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Service 
-public class GestorPregunta {
-    @Autowired 
-    private PreguntaDAO preguntaDAO;
+@Service
+@RequiredArgsConstructor 
+public class GestorPregunta { 
+    private final PreguntaDAO preguntaDAO;
 
     public List<PreguntaDTO> buscarPreguntas( String competencia, String factor, String pregunta){
-        boolean sinFiltros = ((competencia == null || competencia.isBlank()) && 
-                              (factor == null || factor.isBlank()) &&
-                              (pregunta == null || pregunta.isBlank()));
-        
-        if(sinFiltros){
-            throw new IllegalArgumentException("Debe ingresar al menos un argumento");
+        String compFiltro = (competencia == null || competencia.isBlank()) ? null : "%" + competencia.trim().toLowerCase() + "%";
+        String factorFiltro = (factor == null || factor.isBlank()) ? null : "%" + factor.trim().toLowerCase() + "%";
+        String nombreFiltro = (pregunta == null || pregunta.isBlank()) ? null : "%" + pregunta.trim().toLowerCase() + "%";
+
+        if (compFiltro == null && factorFiltro == null && nombreFiltro == null) {
+            throw new IllegalArgumentException("Debe ingresar al menos un criterio de búsqueda.");
         }
 
-        List<Pregunta> preguntaLista = preguntaDAO.buscarPreguntas(competencia, factor, pregunta);
-
+        List<Pregunta> preguntaLista = preguntaDAO.buscarPreguntas(compFiltro, factorFiltro, nombreFiltro);
         ArrayList<PreguntaDTO> PreguntaDTOLista = new ArrayList<PreguntaDTO>();
 
         for (Pregunta p: preguntaLista){
