@@ -11,9 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.CapitalHumano.trabajointegrador.dto.ClasificacionCuestionariosDTO;
+import com.CapitalHumano.trabajointegrador.dto.OrdenMeritoDTO;
+import com.CapitalHumano.trabajointegrador.dto.OrdenMeritoIncompletoDTO;
 import com.CapitalHumano.trabajointegrador.entity.CaracteristicaPuesto;
 import com.CapitalHumano.trabajointegrador.entity.Cuestionario;
 import com.CapitalHumano.trabajointegrador.dto.PuestoOrdenMeritoDTO;
+import com.CapitalHumano.trabajointegrador.dto.ReporteOrdenMeritoDTO;
 import com.CapitalHumano.trabajointegrador.entity.ResultadoCompetencia;
 import com.CapitalHumano.trabajointegrador.repository.CaracteristicaPuestoDAO;
 import com.CapitalHumano.trabajointegrador.repository.CuestionarioDAO;
@@ -75,12 +78,65 @@ public class GestorOrdenMerito {
         String codigoValidado = validarCodigoPuesto(codigoPuesto);
         List<CaracteristicaPuesto> caracteristicas =
                 obtenerCaracteristicasPuesto(codigoValidado);
-        if (caracteristicas.isEmpty()) {
-            throw new IllegalStateException(
-                    "El puesto no tiene competencias configuradas");
+        validarCaracteristicasConfiguradas(caracteristicas);
+        List<Cuestionario> cuestionarios = obtenerCuestionarios(codigoValidado);
+        return clasificarCuestionarios(
+                codigoValidado, caracteristicas, cuestionarios);
+    }
+
+    @Transactional(readOnly = true)
+    public ReporteOrdenMeritoDTO generarReporteOrdenMerito(String codigoPuesto) {
+        String codigoValidado = validarCodigoPuesto(codigoPuesto);
+        List<CaracteristicaPuesto> caracteristicas =
+                obtenerCaracteristicasPuesto(codigoValidado);
+        validarCaracteristicasConfiguradas(caracteristicas);
+        List<Cuestionario> cuestionarios = obtenerCuestionarios(codigoValidado);
+        ClasificacionCuestionariosDTO clasificacion =
+                clasificarCuestionarios(
+                        codigoValidado, caracteristicas, cuestionarios);
+
+        Map<String, Cuestionario> cuestionariosPorClave = new HashMap<>();
+        cuestionarios.forEach(cuestionario ->
+                cuestionariosPorClave.put(cuestionario.getClave(), cuestionario));
+
+        List<OrdenMeritoDTO> aprobados = new ArrayList<>();
+        for (int indice = 0;
+                indice < clasificacion.cuestionariosAprobados().size();
+                indice++) {
+            String clave = clasificacion.cuestionariosAprobados().get(indice);
+            aprobados.add(aOrdenMeritoDTO(
+                    buscarCuestionario(cuestionariosPorClave, clave),
+                    indice + 1,
+                    true));
         }
 
-        List<Cuestionario> cuestionarios = obtenerCuestionarios(codigoValidado);
+        List<OrdenMeritoDTO> desaprobados =
+                clasificacion.cuestionariosDesaprobados().stream()
+                        .map(clave -> aOrdenMeritoDTO(
+                                buscarCuestionario(cuestionariosPorClave, clave),
+                                null,
+                                false))
+                        .toList();
+
+        Map<String, List<OrdenMeritoIncompletoDTO>> sinCompletarPorEstado =
+                new LinkedHashMap<>();
+        clasificacion.cuestionariosSinCompletarPorEstado().forEach(
+                (estado, claves) -> sinCompletarPorEstado.put(
+                        estado,
+                        claves.stream()
+                                .map(clave -> aOrdenMeritoIncompletoDTO(
+                                        buscarCuestionario(
+                                                cuestionariosPorClave, clave)))
+                                .toList()));
+
+        return new ReporteOrdenMeritoDTO(
+                aprobados, desaprobados, sinCompletarPorEstado);
+    }
+
+    private ClasificacionCuestionariosDTO clasificarCuestionarios(
+            String codigoPuesto,
+            List<CaracteristicaPuesto> caracteristicas,
+            List<Cuestionario> cuestionarios) {
         Map<String, List<String>> sinCompletarPorEstado = new LinkedHashMap<>();
         ESTADOS_SIN_COMPLETAR.forEach(estado ->
                 sinCompletarPorEstado.put(estado, new ArrayList<>()));
@@ -99,7 +155,7 @@ public class GestorOrdenMerito {
                 .toList();
         Map<String, Map<Integer, ResultadoCompetencia>> resultadosPorCuestionario =
                 new HashMap<>();
-        obtenerResultadosCompetencia(codigoValidado, clavesCuestionarios)
+        obtenerResultadosCompetencia(codigoPuesto, clavesCuestionarios)
                 .forEach(resultado -> resultadosPorCuestionario
                         .computeIfAbsent(
                                 resultado.getId().getClaveCuestionario(),
@@ -171,6 +227,57 @@ public class GestorOrdenMerito {
 
         return new ClasificacionCuestionariosDTO(
                 aprobados, desaprobados, sinCompletarPorEstado, inconsistentes);
+    }
+
+    private void validarCaracteristicasConfiguradas(
+            List<CaracteristicaPuesto> caracteristicas) {
+        if (caracteristicas.isEmpty()) {
+            throw new IllegalStateException(
+                    "El puesto no tiene competencias configuradas");
+        }
+    }
+
+    private Cuestionario buscarCuestionario(
+            Map<String, Cuestionario> cuestionariosPorClave,
+            String claveCuestionario) {
+        Cuestionario cuestionario = cuestionariosPorClave.get(claveCuestionario);
+        if (cuestionario == null) {
+            throw new IllegalStateException(
+                    "No se encontró el cuestionario clasificado: "
+                            + claveCuestionario);
+        }
+        return cuestionario;
+    }
+
+    private OrdenMeritoDTO aOrdenMeritoDTO(
+            Cuestionario cuestionario,
+            Integer posicion,
+            Boolean superaMinimo) {
+        return new OrdenMeritoDTO(
+                cuestionario.getClave(),
+                posicion,
+                cuestionario.getCandidato().getNombre(),
+                cuestionario.getCandidato().getApellido(),
+                cuestionario.getCandidato().getTipoDocumento(),
+                cuestionario.getCandidato().getNroDocumento(),
+                cuestionario.getFechaInicio(),
+                cuestionario.getFechaFinalizacion(),
+                cuestionario.getCantidadAccesos(),
+                cuestionario.getPuntajeFinal(),
+                superaMinimo);
+    }
+
+    private OrdenMeritoIncompletoDTO aOrdenMeritoIncompletoDTO(
+            Cuestionario cuestionario) {
+        return new OrdenMeritoIncompletoDTO(
+                cuestionario.getClave(),
+                cuestionario.getCandidato().getNombre(),
+                cuestionario.getCandidato().getApellido(),
+                cuestionario.getCandidato().getTipoDocumento(),
+                cuestionario.getCandidato().getNroDocumento(),
+                cuestionario.getFechaInicio(),
+                cuestionario.getFechaUltimoIngreso(),
+                cuestionario.getCantidadAccesos());
     }
 
     public List<PuestoOrdenMeritoDTO> buscarPuestos(

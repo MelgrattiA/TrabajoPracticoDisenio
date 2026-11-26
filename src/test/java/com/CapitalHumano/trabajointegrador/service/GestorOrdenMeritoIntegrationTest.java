@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.CapitalHumano.trabajointegrador.config.PostgreSqlTestConfiguration;
 import com.CapitalHumano.trabajointegrador.dto.ClasificacionCuestionariosDTO;
+import com.CapitalHumano.trabajointegrador.dto.OrdenMeritoDTO;
+import com.CapitalHumano.trabajointegrador.dto.OrdenMeritoIncompletoDTO;
 import com.CapitalHumano.trabajointegrador.dto.PuestoOrdenMeritoDTO;
+import com.CapitalHumano.trabajointegrador.dto.ReporteOrdenMeritoDTO;
 import com.CapitalHumano.trabajointegrador.entity.Candidato;
 import com.CapitalHumano.trabajointegrador.entity.CaracteristicaPuesto;
 import com.CapitalHumano.trabajointegrador.entity.CaracteristicaPuestoId;
@@ -18,6 +21,7 @@ import com.CapitalHumano.trabajointegrador.entity.ResultadoCompetenciaId;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -185,6 +189,76 @@ class GestorOrdenMeritoIntegrationTest {
                         "Q-TIE-02",
                         "Q-TIE-05",
                         "Q-TIE-04");
+    }
+
+    @Test
+    void generaReporteConGruposYExcluyeCuestionariosInconsistentes() {
+        Puesto puesto = entityManager.getReference(Puesto.class, "P-100");
+        Candidato candidato = entityManager.getReference(Candidato.class, 1);
+        Competencia comunicacion = entityManager.getReference(Competencia.class, 101);
+        Competencia analisis = entityManager.getReference(Competencia.class, 102);
+
+        crearCuestionario("Q-8", puesto, candidato, 3);
+        actualizarPuntajeFinal("Q-8", new BigDecimal("8.50"));
+        crearResultado("Q-8", puesto, comunicacion, new BigDecimal("4.25"));
+        crearResultado("Q-8", puesto, analisis, new BigDecimal("6.75"));
+
+        crearCuestionario("Q-9", puesto, candidato, 3);
+        actualizarPuntajeFinal("Q-9", new BigDecimal("9.50"));
+        crearResultado("Q-9", puesto, comunicacion, new BigDecimal("4.25"));
+        crearResultado("Q-9", puesto, analisis, new BigDecimal("6.75"));
+
+        ReporteOrdenMeritoDTO reporte =
+                gestorOrdenMerito.generarReporteOrdenMerito("P-100");
+
+        assertThat(reporte.aprobados())
+                .extracting(OrdenMeritoDTO::claveCuestionario)
+                .containsExactly("Q-9", "Q-8");
+        assertThat(reporte.aprobados())
+                .extracting(OrdenMeritoDTO::posicion)
+                .containsExactly(1, 2);
+        assertThat(reporte.aprobados().getFirst().puntajeObtenido())
+                .isEqualByComparingTo("9.50");
+        assertThat(reporte.aprobados().getFirst().superaMinimo()).isTrue();
+        assertThat(reporte.aprobados().getFirst().nombre()).isEqualTo("Candidato 1");
+        assertThat(reporte.aprobados().getFirst().fechaFinalizacion())
+                .isEqualTo(LocalDateTime.of(2026, 11, 20, 9, 0)
+                        .plusDays(3)
+                        .plusHours(4));
+
+        assertThat(reporte.desaprobados())
+                .extracting(OrdenMeritoDTO::claveCuestionario)
+                .containsExactly("Q-1");
+        assertThat(reporte.desaprobados().getFirst().posicion()).isNull();
+        assertThat(reporte.desaprobados().getFirst().superaMinimo()).isFalse();
+
+        assertThat(reporte.cuestionariosSinCompletarPorEstado().keySet())
+                .containsExactly(
+                        "Activo", "En Proceso", "Incompleto", "Sin Contestar");
+        List<OrdenMeritoIncompletoDTO> activos =
+                reporte.cuestionariosSinCompletarPorEstado().get("Activo");
+        assertThat(activos)
+                .extracting(OrdenMeritoIncompletoDTO::claveCuestionario)
+                .containsExactly("Q-5");
+        assertThat(activos.getFirst().fechaUltimoIngreso())
+                .isEqualTo(LocalDateTime.of(2026, 11, 20, 9, 0)
+                        .plusDays(1)
+                        .plusHours(2));
+        assertThat(activos.getFirst().cantidadAccesos()).isEqualTo(1);
+
+        List<String> clavesDelReporte = new ArrayList<>();
+        reporte.aprobados().forEach(dto ->
+                clavesDelReporte.add(dto.claveCuestionario()));
+        reporte.desaprobados().forEach(dto ->
+                clavesDelReporte.add(dto.claveCuestionario()));
+        reporte.cuestionariosSinCompletarPorEstado().values().stream()
+                .flatMap(List::stream)
+                .map(OrdenMeritoIncompletoDTO::claveCuestionario)
+                .forEach(clavesDelReporte::add);
+
+        assertThat(clavesDelReporte)
+                .doesNotContain("Q-2")
+                .doesNotHaveDuplicates();
     }
 
     @Test
