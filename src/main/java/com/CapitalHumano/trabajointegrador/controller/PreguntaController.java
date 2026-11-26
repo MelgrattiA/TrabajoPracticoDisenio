@@ -1,23 +1,27 @@
 package com.CapitalHumano.trabajointegrador.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.CapitalHumano.trabajointegrador.service.GestorPregunta;
+
+import lombok.RequiredArgsConstructor;
+
 import com.CapitalHumano.trabajointegrador.dto.PreguntaDTO;
 
 import java.util.List;
 
 @RestController 
 @RequestMapping("/api/preguntas")
+@CrossOrigin(origins = "http://localhost:3000")
+@RequiredArgsConstructor 
 public class PreguntaController {
-    
-    @Autowired
-    private GestorPregunta gestorPregunta;
+    private final GestorPregunta gestorPregunta;
+   
 
     @GetMapping 
     public ResponseEntity<?> buscarPreguntas(
