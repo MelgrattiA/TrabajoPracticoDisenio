@@ -28,6 +28,9 @@ function AvatarPlaceholder({ size = "md" }) {
 export default function EvaluarCandidatosPage() {
   const router = useRouter();
 
+  // Helper para resolver el ID sin importar cómo lo serialice el DTO
+  const getIdCandidato = (c) => c?.nro_candidato ?? c?.nroCandidato ?? c?.id;
+
   // Control de vista: 1 = Búsqueda Candidatos, 2 = Evaluar Candidatos
   const [paso, setPaso] = useState(1);
 
@@ -40,7 +43,7 @@ export default function EvaluarCandidatosPage() {
   const [seleccionadosParaAgregar, setSeleccionadosParaAgregar] = useState([]); // IDs marcados con "+ add"
   const [candidatosAEvaluar, setCandidatosAEvaluar] = useState([]);
 
-  // Cartel rojo flotante (string o { titulo, items })
+  // Cartel rojo flotante (string o { texto, items })
   const [errorBanner, setErrorBanner] = useState(null);
 
   // --- ESTADO VISTA 2: EVALUAR CANDIDATOS ---
@@ -121,7 +124,7 @@ export default function EvaluarCandidatosPage() {
         // Backend devuelve List<Integer> con IDs que tienen cuestionario Activo o En Proceso
         const idsInvalidos = await res.json();
         const nombresInvalidos = candidatosDisponibles
-          .filter((c) => idsInvalidos.includes(c.nroCandidato))
+          .filter((c) => idsInvalidos.includes(getIdCandidato(c)))
           .map((c) => `${c.nombre} ${c.apellido}`);
 
         setErrorBanner({
@@ -141,8 +144,8 @@ export default function EvaluarCandidatosPage() {
       // Todos válidos: los pasamos a "Candidatos a Evaluar" sin duplicados
       const nuevosCandidatos = candidatosDisponibles.filter(
         (c) =>
-          seleccionadosParaAgregar.includes(c.nroCandidato) &&
-          !candidatosAEvaluar.some((ya) => ya.nroCandidato === c.nroCandidato)
+          seleccionadosParaAgregar.includes(getIdCandidato(c)) &&
+          !candidatosAEvaluar.some((ya) => getIdCandidato(ya) === getIdCandidato(c))
       );
 
       setCandidatosAEvaluar((prev) => [...prev, ...nuevosCandidatos]);
@@ -156,7 +159,7 @@ export default function EvaluarCandidatosPage() {
 
   const handleQuitarCandidato = (id) => {
     setErrorBanner(null);
-    setCandidatosAEvaluar((prev) => prev.filter((c) => c.nroCandidato !== id));
+    setCandidatosAEvaluar((prev) => prev.filter((c) => getIdCandidato(c) !== id));
   };
 
   const handleSiguientePaso1 = async () => {
@@ -234,7 +237,7 @@ export default function EvaluarCandidatosPage() {
       const listaCompetencias = await resComp.json();
 
       // 2. Obtener datos completos de candidatos y generar claves de 8 caracteres
-      const ids = candidatosAEvaluar.map((c) => c.nroCandidato);
+      const ids = candidatosAEvaluar.map((c) => getIdCandidato(c));
       const resClaves = await fetch(`${API_BASE}/candidatos-a-evaluar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -296,8 +299,10 @@ export default function EvaluarCandidatosPage() {
   };
 
   const exportarExcelLocal = () => {
-    const puestoObj = puestos.find((p) => p.codigo === codPuestoSeleccionado);
-    const nombreFuncion = (puestoObj?.nombre || "Funcion")
+    const puestoObj = puestos.find(
+      (p) => (p.codigo ?? p.codigoPuesto) === codPuestoSeleccionado
+    );
+    const nombreFuncion = (puestoObj?.nombre ?? puestoObj?.nombrePuesto ?? "Funcion")
       .replace(/[\\/:*?"<>|]/g, "")
       .trim();
 
@@ -518,10 +523,11 @@ export default function EvaluarCandidatosPage() {
                   </p>
                 ) : (
                   candidatosDisponibles.map((cand) => {
-                    const marcado = seleccionadosParaAgregar.includes(cand.nroCandidato);
+                    const idCand = getIdCandidato(cand);
+                    const marcado = seleccionadosParaAgregar.includes(idCand);
                     return (
                       <div
-                        key={cand.nroCandidato}
+                        key={idCand}
                         className={`flex flex-col items-center text-center min-w-[110px] p-2 rounded-lg transition ${
                           marcado ? "bg-gray-300 ring-2 ring-black" : ""
                         }`}
@@ -530,12 +536,10 @@ export default function EvaluarCandidatosPage() {
                         <p className="text-xs font-medium mt-2 leading-tight">
                           {cand.nombre} {cand.apellido}
                         </p>
-                        <p className="text-xs text-gray-700 mb-2">
-                          {cand.nroCandidato}
-                        </p>
+                        <p className="text-xs text-gray-700 mb-2">{idCand}</p>
                         <button
                           type="button"
-                          onClick={() => toggleSeleccionDisponible(cand.nroCandidato)}
+                          onClick={() => toggleSeleccionDisponible(idCand)}
                           className={`px-3 py-1 rounded text-xs font-medium transition ${
                             marcado
                               ? "bg-emerald-700 text-white"
@@ -571,27 +575,28 @@ export default function EvaluarCandidatosPage() {
                     Aún no hay candidatos agregados para evaluar.
                   </p>
                 ) : (
-                  candidatosAEvaluar.map((cand) => (
-                    <div
-                      key={cand.nroCandidato}
-                      className="flex flex-col items-center text-center min-w-[110px] p-2"
-                    >
-                      <AvatarPlaceholder />
-                      <p className="text-xs font-medium mt-2 leading-tight">
-                        {cand.nombre} {cand.apellido}
-                      </p>
-                      <p className="text-xs text-gray-700 mb-2">
-                        {cand.nroCandidato}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleQuitarCandidato(cand.nroCandidato)}
-                        className="bg-black text-white px-3 py-1 rounded text-xs font-medium hover:bg-gray-800 transition"
+                  candidatosAEvaluar.map((cand) => {
+                    const idCand = getIdCandidato(cand);
+                    return (
+                      <div
+                        key={idCand}
+                        className="flex flex-col items-center text-center min-w-[110px] p-2"
                       >
-                        - Quitar
-                      </button>
-                    </div>
-                  ))
+                        <AvatarPlaceholder />
+                        <p className="text-xs font-medium mt-2 leading-tight">
+                          {cand.nombre} {cand.apellido}
+                        </p>
+                        <p className="text-xs text-gray-700 mb-2">{idCand}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleQuitarCandidato(idCand)}
+                          className="bg-black text-white px-3 py-1 rounded text-xs font-medium hover:bg-gray-800 transition"
+                        >
+                          - Quitar
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </section>
@@ -618,11 +623,15 @@ export default function EvaluarCandidatosPage() {
                     <option value="">
                       Empresa: [Nombre de la empresa] Funcion:[Nombre]
                     </option>
-                    {puestos.map((p) => (
-                      <option key={p.codigo} value={p.codigo}>
-                        Empresa: {p.empresa} Funcion: {p.nombre}
-                      </option>
-                    ))}
+                    {puestos.map((p) => {
+                      const codPuesto = p.codigo ?? p.codigoPuesto;
+                      const nomPuesto = p.nombre ?? p.nombrePuesto;
+                      return (
+                        <option key={codPuesto} value={codPuesto}>
+                          Empresa: {p.empresa} Funcion: {nomPuesto}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -662,8 +671,8 @@ export default function EvaluarCandidatosPage() {
                     ) : (
                       competencias.map((comp, idx) => (
                         <tr key={idx}>
-                          <td className="border-b border-r border-gray-400 px-3 py-1">
-                            {comp.nombre ?? comp.competencia}
+                         <td className="border-b border-r border-gray-400 px-3 py-1">
+                            {comp.competenciaNombre}
                           </td>
                           <td className="border-b border-gray-400 px-3 py-1">
                             {comp.ponderacion ?? comp.ponderacionMinima}%
@@ -683,7 +692,7 @@ export default function EvaluarCandidatosPage() {
                 <div className="bg-gray-200 rounded-xl p-5 max-h-80 overflow-y-auto grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-5">
                   {candidatosConClave.map((cand) => (
                     <div
-                      key={cand.nro_candidato}
+                      key={getIdCandidato(cand)}
                       className="flex flex-col items-center text-center text-xs leading-snug"
                     >
                       <AvatarPlaceholder />
