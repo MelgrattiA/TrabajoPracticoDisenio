@@ -26,5 +26,7 @@ public interface CandidatoDAO extends JpaRepository <Candidato, Integer> {
         @Param ("nombre") String nombre,
         @Param ("apellido") String apellido 
     );
+
+    List<Candidato> findByNroCandidatoInAndEliminadoFalse(List<Integer> listaNroCandidato);
     
 } 

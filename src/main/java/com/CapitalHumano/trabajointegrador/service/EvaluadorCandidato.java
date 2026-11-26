@@ -1,23 +1,30 @@
 package com.CapitalHumano.trabajointegrador.service;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.CapitalHumano.trabajointegrador.dto.CandidatoClaveDTO;
 import com.CapitalHumano.trabajointegrador.dto.CandidatoDTO;
 import com.CapitalHumano.trabajointegrador.dto.CompetenciaPonderadaDTO;
 import com.CapitalHumano.trabajointegrador.dto.PuestoEvaluadoDTO;
 import com.CapitalHumano.trabajointegrador.entity.Candidato;
 import com.CapitalHumano.trabajointegrador.entity.CaracteristicaPuesto;
 import com.CapitalHumano.trabajointegrador.entity.Competencia;
+import com.CapitalHumano.trabajointegrador.entity.Cuestionario;
 import com.CapitalHumano.trabajointegrador.entity.Puesto;
 import com.CapitalHumano.trabajointegrador.repository.CandidatoDAO;
 import com.CapitalHumano.trabajointegrador.repository.CaracteristicaPuestoDAO;
+import com.CapitalHumano.trabajointegrador.repository.CuestionarioDAO;
+import com.CapitalHumano.trabajointegrador.repository.EstadoCuestionarioDAO;
 import com.CapitalHumano.trabajointegrador.repository.FactorDAO;
 import com.CapitalHumano.trabajointegrador.repository.PreguntaDAO;
 import com.CapitalHumano.trabajointegrador.repository.PuestoDAO;
 import com.CapitalHumano.trabajointegrador.entity.Factor;
+import com.CapitalHumano.trabajointegrador.entity.EstadoCuestionario;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +37,12 @@ public class EvaluadorCandidato {
     private final CaracteristicaPuestoDAO caracteristicaPuestoDAO;
     private final FactorDAO factorDAO;
     private final PreguntaDAO preguntaDAO;
+    private final CuestionarioDAO cuestionarioDAO;
+    private final EstadoCuestionarioDAO estadoCuestionarioDAO;
+
+    //Para generar claves
+    private static final String CARACTERES_CLAVE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public List<CandidatoDTO> buscarCandidato(Integer nroCandidato, String nombre, String apellido){
         boolean sinFiltros = ((nombre == null || nombre.isBlank()) && 
@@ -142,4 +155,63 @@ public class EvaluadorCandidato {
         return new CompetenciaPonderadaDTO(compNombre, ponderacion);
     }
 
+    public List<CandidatoClaveDTO> buscarCandidatosYGenerarClaves (List<Integer> idCandidatos){
+        List<Candidato> candidatosClave = candidatoDAO.findByNroCandidatoInAndEliminadoFalse(idCandidatos);
+        List<CandidatoClaveDTO> candidatoClaveDTOs = new ArrayList<CandidatoClaveDTO>();
+
+        for(Candidato c: candidatosClave){
+            generarCandidatoClaveDTO(c, generarClaveCandidato());
+        }
+
+        return candidatoClaveDTOs;
+    }
+
+    private String generarClaveCandidato (){
+        String clave;
+        do {
+            StringBuilder sb = new StringBuilder(8);
+            for (int i = 0; i < 8; i++) {
+                int indice = RANDOM.nextInt(CARACTERES_CLAVE.length());
+                sb.append(CARACTERES_CLAVE.charAt(indice));
+            }
+            clave = sb.toString();
+        } while (cuestionarioDAO.existsById(clave));
+
+        return clave;
+    }
+
+    private CandidatoClaveDTO generarCandidatoClaveDTO (Candidato c, String clave){
+        Integer nro_candidato = c.getNroCandidato();
+        String nombre = c.getNombre();
+        String apellido = c.getApellido();
+        String tipoDocumento = c.getTipoDocumento();
+        Integer nroDocumento = c.getNroDocumento();
+
+        return new CandidatoClaveDTO(nro_candidato, nombre, apellido, tipoDocumento, nroDocumento, clave);
+    }
+
+    public void guardarInformacion (List<CandidatoClaveDTO> candidatosLista, String codigoPuesto){
+        List<Cuestionario> evaluaciones = new ArrayList<Cuestionario>();
+
+        for(CandidatoClaveDTO c: candidatosLista){
+            Candidato candidato = candidatoDAO.getReferenceById(c.getNro_candidato());
+            Puesto puesto = puestoDAO.getReferenceById(codigoPuesto);
+            EstadoCuestionario estadoActivo = estadoCuestionarioDAO.getReferenceById(1);
+            LocalDateTime now = LocalDateTime.now();
+
+            Cuestionario cuestionario = Cuestionario.builder()
+                .clave(c.getClaveGenerada())
+                .fechaCreacion(now)
+                .cantidadAccesos(0)
+                .candidato(candidato)
+                .puesto(puesto)
+                .estado(estadoActivo)
+                .build();
+
+            evaluaciones.add(cuestionario);
+        }
+
+        cuestionarioDAO.saveAll(evaluaciones);
+    }
 }
+
