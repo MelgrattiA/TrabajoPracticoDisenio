@@ -52,37 +52,37 @@ function TablaCandidatosCompletados({ titulo, filas, mostrarPosicion }) {
   return (
     <section className="space-y-1.5">
       <h3 className="text-sm font-medium">{titulo}</h3>
-      <div className="border border-gray-500 max-h-56 overflow-y-auto print:max-h-none print:overflow-visible">
-        <table className="w-full text-left border-collapse text-xs">
+      <div className="border border-gray-500 max-h-56 overflow-auto print:max-h-none print:overflow-visible">
+        <table className="w-full text-left border-collapse text-xs print:text-[10px]">
           <thead className="bg-gray-100 sticky top-0">
             <tr>
               {mostrarPosicion && (
-                <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+                <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                   Pos.
                 </th>
               )}
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Tipo de documento
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Numero de documento
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Apellido
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Nombre
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Puntaje obtenido
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Fecha inicio
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Fecha de fin
               </th>
-              <th className="border-b border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Cantidad de accesos
               </th>
             </tr>
@@ -92,7 +92,7 @@ function TablaCandidatosCompletados({ titulo, filas, mostrarPosicion }) {
               <tr>
                 <td
                   colSpan={colSpan}
-                  className="px-3 py-4 text-center text-gray-500"
+                  className="px-3 py-4 print:px-1.5 print:py-2 text-center text-gray-500"
                 >
                   Sin candidatos en esta categoría.
                 </td>
@@ -101,32 +101,32 @@ function TablaCandidatosCompletados({ titulo, filas, mostrarPosicion }) {
               filas.map((item) => (
                 <tr key={item.claveCuestionario} className="hover:bg-gray-50">
                   {mostrarPosicion && (
-                    <td className="border-b border-r border-gray-300 px-3 py-1.5 font-semibold">
+                    <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                       {item.posicion}
                     </td>
                   )}
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.tipoDocumento ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.nroDocumento ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.apellido ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.nombre ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5 font-medium">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1 font-medium">
                     {item.puntajeObtenido ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {formatearFechaHora(item.fechaInicio)}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {formatearFechaHora(item.fechaFinalizacion)}
                   </td>
-                  <td className="border-b border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.cantidadAccesos ?? 0}
                   </td>
                 </tr>
@@ -151,32 +151,32 @@ function TablaCandidatosSinCompletar({ sinCompletarPorEstado }) {
   return (
     <section className="space-y-1.5">
       <h3 className="text-sm font-medium">Candidatos Sin completar:</h3>
-      <div className="border border-gray-500 max-h-56 overflow-y-auto print:max-h-none print:overflow-visible">
-        <table className="w-full text-left border-collapse text-xs">
+      <div className="border border-gray-500 max-h-56 overflow-auto print:max-h-none print:overflow-visible">
+        <table className="w-full text-left border-collapse text-xs print:text-[10px]">
           <thead className="bg-gray-100 sticky top-0">
             <tr>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Tipo de documento
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Numero de documento
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Apellido
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Nombre
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Estado
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Fecha inicio
               </th>
-              <th className="border-b border-r border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-r border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Fecha de fin
               </th>
-              <th className="border-b border-gray-500 px-3 py-1.5 font-semibold">
+              <th className="border-b border-gray-500 px-3 py-1.5 print:px-1.5 print:py-1 font-semibold">
                 Cantidad de accesos
               </th>
             </tr>
@@ -184,35 +184,35 @@ function TablaCandidatosSinCompletar({ sinCompletarPorEstado }) {
           <tbody>
             {filasAgrupadas.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-4 text-center text-gray-500">
+                <td colSpan={8} className="px-3 py-4 print:px-1.5 print:py-2 text-center text-gray-500">
                   Sin candidatos en esta categoría.
                 </td>
               </tr>
             ) : (
               filasAgrupadas.map((item) => (
                 <tr key={item.claveCuestionario} className="hover:bg-gray-50">
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.tipoDocumento ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.nroDocumento ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.apellido ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.nombre ?? "-"}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.estadoNombre}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {formatearFechaHora(item.fechaInicio)}
                   </td>
-                  <td className="border-b border-r border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-r border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {formatearFechaHora(item.fechaUltimoIngreso)}
                   </td>
-                  <td className="border-b border-gray-300 px-3 py-1.5">
+                  <td className="border-b border-gray-300 px-3 py-1.5 print:px-1.5 print:py-1">
                     {item.cantidadAccesos ?? 0}
                   </td>
                 </tr>
@@ -397,7 +397,7 @@ export default function OrdenMeritoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col justify-between p-6 md:p-10">
+    <div className="min-h-screen bg-white text-black flex flex-col justify-between p-6 md:p-10 print:p-0">
       <div>
         <Cabecera
           titulo={
