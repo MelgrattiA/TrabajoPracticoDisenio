@@ -14,6 +14,16 @@ import com.CapitalHumano.trabajointegrador.entity.Cuestionario;
 public interface CuestionarioDAO extends JpaRepository<Cuestionario, String> {
 
     @Query("""
+            SELECT DISTINCT c
+            FROM Cuestionario c
+            JOIN FETCH c.candidato
+            JOIN FETCH c.estado
+            WHERE c.puesto.codigoPuesto = :codigoPuesto
+            """)
+    List<Cuestionario> buscarTodosPorCodigoPuesto(
+            @Param("codigoPuesto") String codigoPuesto);
+
+    @Query("""
             SELECT c
             FROM Cuestionario c
             WHERE c.candidato.nroCandidato = :nroCandidato

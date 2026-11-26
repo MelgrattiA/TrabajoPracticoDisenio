@@ -1,5 +1,7 @@
 package com.CapitalHumano.trabajointegrador.entity;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -37,5 +39,5 @@ public class CaracteristicaPuesto {
     private Competencia competencia;
 
     @Column(name = "ponderacion_minima", nullable = false)
-    private Integer ponderacionMinima;
+    private BigDecimal ponderacionMinima;
 }

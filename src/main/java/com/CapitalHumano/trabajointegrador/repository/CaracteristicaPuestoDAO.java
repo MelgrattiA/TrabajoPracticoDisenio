@@ -15,6 +15,17 @@ import com.CapitalHumano.trabajointegrador.entity.Competencia;
 public interface CaracteristicaPuestoDAO
         extends JpaRepository<CaracteristicaPuesto, CaracteristicaPuestoId> {
 
+
+    @Query("""
+            SELECT DISTINCT cp
+            FROM CaracteristicaPuesto cp
+            JOIN FETCH cp.competencia
+            WHERE cp.puesto.codigoPuesto = :codigoPuesto
+            ORDER BY cp.competencia.codigo
+            """)
+    List<CaracteristicaPuesto> buscarCaracteristicasPorCodigoPuesto(
+            @Param("codigoPuesto") String codigoPuesto);
+
         @Query("""
             SELECT cp.competencia
             FROM CaracteristicaPuesto cp
