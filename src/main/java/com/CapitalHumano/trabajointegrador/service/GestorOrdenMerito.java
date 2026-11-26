@@ -1,9 +1,16 @@
 package com.CapitalHumano.trabajointegrador.service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.CapitalHumano.trabajointegrador.dto.ClasificacionCuestionariosDTO;
 import com.CapitalHumano.trabajointegrador.entity.CaracteristicaPuesto;
 import com.CapitalHumano.trabajointegrador.entity.Cuestionario;
 import com.CapitalHumano.trabajointegrador.dto.PuestoOrdenMeritoDTO;
@@ -19,6 +26,10 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class GestorOrdenMerito {
+
+    private static final String ESTADO_COMPLETO = "Completo";
+    private static final List<String> ESTADOS_SIN_COMPLETAR =
+            List.of("Activo", "En Proceso", "Incompleto", "Sin Contestar");
 
     private final PuestoDAO puestoDAO;
     private final CuestionarioDAO cuestionarioDAO;
@@ -56,6 +67,110 @@ public class GestorOrdenMerito {
         return resultadoCompetenciaDAO.buscarPorPuestoYCuestionarios(
                 codigoValidado,
                 clavesCuestionarios.stream().distinct().toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ClasificacionCuestionariosDTO clasificarCuestionariosPorPuesto(
+            String codigoPuesto) {
+        String codigoValidado = validarCodigoPuesto(codigoPuesto);
+        List<CaracteristicaPuesto> caracteristicas =
+                obtenerCaracteristicasPuesto(codigoValidado);
+        if (caracteristicas.isEmpty()) {
+            throw new IllegalStateException(
+                    "El puesto no tiene competencias configuradas");
+        }
+
+        List<Cuestionario> cuestionarios = obtenerCuestionarios(codigoValidado);
+        Map<String, List<String>> sinCompletarPorEstado = new LinkedHashMap<>();
+        ESTADOS_SIN_COMPLETAR.forEach(estado ->
+                sinCompletarPorEstado.put(estado, new ArrayList<>()));
+        List<Cuestionario> cuestionariosAprobados = new ArrayList<>();
+        List<String> desaprobados = new ArrayList<>();
+        Map<String, ClasificacionCuestionariosDTO.InconsistenciaCuestionarioDTO>
+                inconsistentes = new LinkedHashMap<>();
+
+        if (cuestionarios.isEmpty()) {
+            return new ClasificacionCuestionariosDTO(
+                    List.of(), desaprobados, sinCompletarPorEstado, inconsistentes);
+        }
+
+        List<String> clavesCuestionarios = cuestionarios.stream()
+                .map(Cuestionario::getClave)
+                .toList();
+        Map<String, Map<Integer, ResultadoCompetencia>> resultadosPorCuestionario =
+                new HashMap<>();
+        obtenerResultadosCompetencia(codigoValidado, clavesCuestionarios)
+                .forEach(resultado -> resultadosPorCuestionario
+                        .computeIfAbsent(
+                                resultado.getId().getClaveCuestionario(),
+                                clave -> new HashMap<>())
+                        .put(
+                                resultado.getId().getCodigoCompetencia(),
+                                resultado));
+
+        for (Cuestionario cuestionario : cuestionarios) {
+            String claveCuestionario = cuestionario.getClave();
+            String estado = cuestionario.getEstado().getNombre();
+            if (!ESTADO_COMPLETO.equals(estado)) {
+                sinCompletarPorEstado
+                        .computeIfAbsent(estado, clave -> new ArrayList<>())
+                        .add(claveCuestionario);
+                continue;
+            }
+
+            Map<Integer, ResultadoCompetencia> resultados =
+                    resultadosPorCuestionario.getOrDefault(
+                            claveCuestionario, Map.of());
+            List<Integer> competenciasFaltantes = new ArrayList<>();
+            boolean cumplePonderacionesMinimas = true;
+            for (CaracteristicaPuesto caracteristica : caracteristicas) {
+                Integer codigoCompetencia =
+                        caracteristica.getCompetencia().getCodigo();
+                ResultadoCompetencia resultado =
+                        resultados.get(codigoCompetencia);
+                if (resultado == null || resultado.getPuntajeObtenido() == null) {
+                    competenciasFaltantes.add(codigoCompetencia);
+                    continue;
+                }
+                if (resultado.getPuntajeObtenido()
+                        .compareTo(caracteristica.getPonderacionMinima()) < 0) {
+                    cumplePonderacionesMinimas = false;
+                }
+            }
+
+            boolean puntajeFinalAusente = cuestionario.getPuntajeFinal() == null;
+            if (!competenciasFaltantes.isEmpty() || puntajeFinalAusente) {
+                inconsistentes.put(
+                        claveCuestionario,
+                        new ClasificacionCuestionariosDTO.InconsistenciaCuestionarioDTO(
+                                competenciasFaltantes,
+                                puntajeFinalAusente));
+                continue;
+            }
+
+            if (cumplePonderacionesMinimas) {
+                cuestionariosAprobados.add(cuestionario);
+            } else {
+                desaprobados.add(claveCuestionario);
+            }
+        }
+
+        cuestionariosAprobados.sort(
+                Comparator.comparing(
+                                Cuestionario::getPuntajeFinal,
+                                Comparator.reverseOrder())
+                        .thenComparing(cuestionario ->
+                                cuestionario.getCandidato().getNroCandidato())
+                        .thenComparing(
+                                Cuestionario::getFechaInicio,
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Cuestionario::getClave));
+        List<String> aprobados = cuestionariosAprobados.stream()
+                .map(Cuestionario::getClave)
+                .toList();
+
+        return new ClasificacionCuestionariosDTO(
+                aprobados, desaprobados, sinCompletarPorEstado, inconsistentes);
     }
 
     public List<PuestoOrdenMeritoDTO> buscarPuestos(

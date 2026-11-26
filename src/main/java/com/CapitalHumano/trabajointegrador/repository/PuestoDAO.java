@@ -17,7 +17,7 @@ public interface PuestoDAO extends JpaRepository <Puesto, String>{
             SELECT p.codigo_puesto AS "codigoPuesto",
                    p.nombre_puesto AS "nombrePuesto",
                    p.empresa AS empresa,
-                   COUNT(c.clave) AS candidatos,
+                   COUNT(DISTINCT c.nro_candidato) AS candidatos,
                    COUNT(c.clave) FILTER (WHERE c.estado_id = 3)
                        AS "evaluacionesCompletas"
             FROM puesto p
