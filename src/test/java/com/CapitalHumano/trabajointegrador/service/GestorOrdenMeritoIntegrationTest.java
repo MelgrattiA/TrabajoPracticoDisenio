@@ -90,6 +90,13 @@ class GestorOrdenMeritoIntegrationTest {
     }
 
     @Test
+    void buscaPorCodigoParcialSinDistinguirMayusculas() {
+        assertThat(gestorOrdenMerito.buscarPuestos("p-10", null, null))
+                .extracting(PuestoOrdenMeritoDTO::getCodigo)
+                .containsExactly("P-100");
+    }
+
+    @Test
     void clasificaCadaCuestionarioYOrdenaAprobadosSinDeduplicarCandidatos() {
         Puesto puesto = entityManager.getReference(Puesto.class, "P-100");
         Candidato candidato = entityManager.getReference(Candidato.class, 1);
@@ -412,6 +419,13 @@ class GestorOrdenMeritoIntegrationTest {
         assertThat(gestorOrdenMerito.buscarPuestos(null, null, "ACME"))
                 .extracting(PuestoOrdenMeritoDTO::getCodigo)
                 .containsExactly("P-100", "P-400");
+    }
+
+    @Test
+    void devuelveVacioSiLaEmpresaCoincidePeroElNombreNo() {
+        assertThat(gestorOrdenMerito.buscarPuestos(
+                null, "Puesto inexistente", "ACME"))
+                .isEmpty();
     }
 
     @Test

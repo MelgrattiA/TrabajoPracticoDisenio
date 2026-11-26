@@ -27,7 +27,8 @@ public interface PuestoDAO extends JpaRepository<Puesto, String> {
             LEFT JOIN cuestionario c
                 ON c.codigo_puesto = p.codigo_puesto
             WHERE p.eliminado = false
-              AND (:codigo IS NULL OR p.codigo_puesto = :codigo)
+              AND (:codigo IS NULL OR LOWER(p.codigo_puesto)
+                   LIKE LOWER(CONCAT('%', :codigo, '%')))
               AND (:nombre IS NULL OR LOWER(p.nombre_puesto)
                    LIKE LOWER(CONCAT('%', :nombre, '%')))
               AND (:empresa IS NULL OR LOWER(p.empresa)

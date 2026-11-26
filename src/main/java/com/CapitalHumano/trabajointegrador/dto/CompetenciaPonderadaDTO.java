@@ -1,11 +1,13 @@
 package com.CapitalHumano.trabajointegrador.dto;
 
+import java.math.BigDecimal;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@Getter 
-@AllArgsConstructor 
+@Getter
+@AllArgsConstructor
 public class CompetenciaPonderadaDTO {
     private String competenciaNombre;
-    private Integer ponderacion;
+    private BigDecimal ponderacion;
 }
