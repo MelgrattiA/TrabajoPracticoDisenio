@@ -23,6 +23,9 @@ import com.CapitalHumano.trabajointegrador.repository.EstadoCuestionarioDAO;
 import com.CapitalHumano.trabajointegrador.repository.FactorDAO;
 import com.CapitalHumano.trabajointegrador.repository.PreguntaDAO;
 import com.CapitalHumano.trabajointegrador.repository.PuestoDAO;
+
+import jakarta.transaction.Transactional;
+
 import com.CapitalHumano.trabajointegrador.entity.Factor;
 import com.CapitalHumano.trabajointegrador.entity.EstadoCuestionario;
 
@@ -45,14 +48,14 @@ public class EvaluadorCandidato {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public List<CandidatoDTO> buscarCandidato(Integer nroCandidato, String nombre, String apellido){
-        boolean sinFiltros = ((nombre == null || nombre.isBlank()) && 
-                              (apellido == null || apellido.isBlank()) &&
-                              (nroCandidato == null));
-        if(sinFiltros){
+        String nombreFiltro = (nombre == null || nombre.isBlank()) ? null : nombre.trim();
+        String apellidoFiltro = (apellido == null || apellido.isBlank()) ? null : apellido.trim();
+
+        if (nroCandidato == null && nombreFiltro == null && apellidoFiltro == null) {
             throw new IllegalArgumentException("Debe ingresar al menos un argumento");
         }
         
-        List<Candidato> candidatosLista = candidatoDAO.buscarCandidato(nroCandidato,nombre,apellido);
+        List<Candidato> candidatosLista = candidatoDAO.buscarCandidato(nroCandidato, nombreFiltro, apellidoFiltro);
 
         ArrayList<CandidatoDTO> candidatoDTOLista = new ArrayList<CandidatoDTO>();
 
@@ -73,6 +76,9 @@ public class EvaluadorCandidato {
     }
 
     public List<Integer> validarCandidatos(List<Integer> listaIdCandidatos){
+        if (listaIdCandidatos == null || listaIdCandidatos.isEmpty()) {
+            throw new IllegalArgumentException("Debe seleccionar al menos un candidato para evaluar.");
+        }
         return gestorCuestionario.buscarActivoOEnProcesoLista(listaIdCandidatos);
     }
 
@@ -160,7 +166,7 @@ public class EvaluadorCandidato {
         List<CandidatoClaveDTO> candidatoClaveDTOs = new ArrayList<CandidatoClaveDTO>();
 
         for(Candidato c: candidatosClave){
-            generarCandidatoClaveDTO(c, generarClaveCandidato());
+            candidatoClaveDTOs.add(generarCandidatoClaveDTO(c, generarClaveCandidato()));
         }
 
         return candidatoClaveDTOs;
@@ -190,15 +196,16 @@ public class EvaluadorCandidato {
         return new CandidatoClaveDTO(nro_candidato, nombre, apellido, tipoDocumento, nroDocumento, clave);
     }
 
+    @Transactional 
     public void guardarInformacion (List<CandidatoClaveDTO> candidatosLista, String codigoPuesto){
         List<Cuestionario> evaluaciones = new ArrayList<Cuestionario>();
+        Puesto puesto = puestoDAO.getReferenceById(codigoPuesto);
+        LocalDateTime now = LocalDateTime.now();
+        EstadoCuestionario estadoActivo = estadoCuestionarioDAO.getReferenceById(1);
 
         for(CandidatoClaveDTO c: candidatosLista){
             Candidato candidato = candidatoDAO.getReferenceById(c.getNro_candidato());
-            Puesto puesto = puestoDAO.getReferenceById(codigoPuesto);
-            EstadoCuestionario estadoActivo = estadoCuestionarioDAO.getReferenceById(1);
-            LocalDateTime now = LocalDateTime.now();
-
+           
             Cuestionario cuestionario = Cuestionario.builder()
                 .clave(c.getClaveGenerada())
                 .fechaCreacion(now)
