@@ -1,5 +1,6 @@
 package com.CapitalHumano.trabajointegrador.service;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ import com.CapitalHumano.trabajointegrador.entity.EstadoCuestionario;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor  
+@RequiredArgsConstructor
 public class EvaluadorCandidato {
     private final CandidatoDAO candidatoDAO;
     private final GestorCuestionario gestorCuestionario;
@@ -43,9 +44,10 @@ public class EvaluadorCandidato {
     private final CuestionarioDAO cuestionarioDAO;
     private final EstadoCuestionarioDAO estadoCuestionarioDAO;
 
-    //Para generar claves
+    // Para generar claves
     private static final String CARACTERES_CLAVE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final SecureRandom RANDOM = new SecureRandom();
+
 
     public List<CandidatoDTO> buscarCandidato(Integer nroCandidato, String nombre, String apellido){
         String nombreFiltro = (nombre == null || nombre.isBlank()) ? null : nombre.trim().toLowerCase();
@@ -54,46 +56,46 @@ public class EvaluadorCandidato {
         if (nroCandidato == null && nombreFiltro == null && apellidoFiltro == null) {
             throw new IllegalArgumentException("Debe ingresar al menos un argumento");
         }
-        
+
         List<Candidato> candidatosLista = candidatoDAO.buscarCandidato(nroCandidato, nombreFiltro, apellidoFiltro);
 
         ArrayList<CandidatoDTO> candidatoDTOLista = new ArrayList<CandidatoDTO>();
 
-        for(Candidato c: candidatosLista){
+        for (Candidato c : candidatosLista) {
             candidatoDTOLista.add(generarCandidatoDTO(c));
         }
 
         return candidatoDTOLista;
 
-   }
+    }
 
-    private CandidatoDTO generarCandidatoDTO(Candidato candidato){
+    private CandidatoDTO generarCandidatoDTO(Candidato candidato) {
         int nro = candidato.getNroCandidato();
         String nom = candidato.getNombre();
         String apel = candidato.getApellido();
 
-        return new CandidatoDTO(nro, nom, apel); 
+        return new CandidatoDTO(nro, nom, apel);
     }
 
-    public List<Integer> validarCandidatos(List<Integer> listaIdCandidatos){
+    public List<Integer> validarCandidatos(List<Integer> listaIdCandidatos) {
         if (listaIdCandidatos == null || listaIdCandidatos.isEmpty()) {
             throw new IllegalArgumentException("Debe seleccionar al menos un candidato para evaluar.");
         }
         return gestorCuestionario.buscarActivoOEnProcesoLista(listaIdCandidatos);
     }
 
-    public List<PuestoEvaluadoDTO> obtenerPuestos(){
+    public List<PuestoEvaluadoDTO> obtenerPuestos() {
         List<Puesto> puestosLista = puestoDAO.findByEliminadoFalse();
         ArrayList<PuestoEvaluadoDTO> puestoEvalDTO = new ArrayList<PuestoEvaluadoDTO>();
 
-        for(Puesto p: puestosLista){
+        for (Puesto p : puestosLista) {
             puestoEvalDTO.add(generarPuestoEvaluadoDTO(p));
         }
 
         return puestoEvalDTO;
     }
 
-    private PuestoEvaluadoDTO generarPuestoEvaluadoDTO (Puesto puesto){
+    private PuestoEvaluadoDTO generarPuestoEvaluadoDTO(Puesto puesto) {
         String nombre = puesto.getNombrePuesto();
         String empresa = puesto.getEmpresa();
         String codigo = puesto.getCodigoPuesto();
@@ -101,44 +103,43 @@ public class EvaluadorCandidato {
         return new PuestoEvaluadoDTO(nombre, empresa, codigo);
     }
 
-    public List<CompetenciaPonderadaDTO> buscarCompetenciasEvaluarValidas (String codPuesto){
-        //Buscamos las competencias y ponderaciones del puesto
+    public List<CompetenciaPonderadaDTO> buscarCompetenciasEvaluarValidas(String codPuesto) {
+        // Buscamos las competencias y ponderaciones del puesto
         List<CaracteristicaPuesto> caracteristicas = caracteristicaPuestoDAO.buscarCaracteristicaPuesto(codPuesto);
 
-        if(caracteristicas.isEmpty()){
+        if (caracteristicas.isEmpty()) {
             throw new IllegalArgumentException("El puesto seleccionado no tiene competencias asociadas");
         }
 
         List<String> noEvaluables = new ArrayList<String>();
         List<CompetenciaPonderadaDTO> compeDTOLista = new ArrayList<CompetenciaPonderadaDTO>();
-        //Por cada competencia buscamos que tenga un factor evaluable
-        for(CaracteristicaPuesto cp: caracteristicas){
+        // Por cada competencia buscamos que tenga un factor evaluable
+        for (CaracteristicaPuesto cp : caracteristicas) {
             Competencia competencia = cp.getCompetencia();
 
-            if(!tieneFactorEvaluable(competencia)){
+            if (!tieneFactorEvaluable(competencia)) {
                 noEvaluables.add(competencia.getNombre());
-            }
-            else{
+            } else {
                 compeDTOLista.add(generarCompetenciaPonderadaDTO(cp));
             }
-            
+
         }
 
-        if(!noEvaluables.isEmpty()){
+        if (!noEvaluables.isEmpty()) {
             throw new IllegalStateException("Las siguientes competencias no pueden ser evaluadas: "
-                + String.join(", ", noEvaluables)
-            );
+                    + String.join(", ", noEvaluables));
         }
 
         return compeDTOLista;
 
     }
-    
-    private boolean tieneFactorEvaluable (Competencia c){
-        List<Factor> factoresCompetencia = factorDAO.findByCompetenciaCodigoAndEliminadoFalseOrderByNroOrdenAsc(c.getCodigo());
 
-        for(Factor f: factoresCompetencia){
-            if(factorEvaluable(f)){
+    private boolean tieneFactorEvaluable(Competencia c) {
+        List<Factor> factoresCompetencia = factorDAO
+                .findByCompetenciaCodigoAndEliminadoFalseOrderByNroOrdenAsc(c.getCodigo());
+
+        for (Factor f : factoresCompetencia) {
+            if (factorEvaluable(f)) {
                 return true;
             }
         }
@@ -146,33 +147,33 @@ public class EvaluadorCandidato {
         return false;
     }
 
-    private boolean factorEvaluable (Factor f){
-        if(preguntaDAO.findByFactorCodigoAndEliminadoFalse(f.getCodigo()).size()>=2){
+    private boolean factorEvaluable(Factor f) {
+        if (preguntaDAO.findByFactorCodigoAndEliminadoFalse(f.getCodigo()).size() >= 2) {
             return true;
         }
 
         return false;
     }
 
-     private CompetenciaPonderadaDTO generarCompetenciaPonderadaDTO (CaracteristicaPuesto cp){
+    private CompetenciaPonderadaDTO generarCompetenciaPonderadaDTO(CaracteristicaPuesto cp) {
         String compNombre = cp.getCompetencia().getNombre();
-        Integer ponderacion = cp.getPonderacionMinima();
+        BigDecimal ponderacion = cp.getPonderacionMinima();
 
         return new CompetenciaPonderadaDTO(compNombre, ponderacion);
     }
 
-    public List<CandidatoClaveDTO> buscarCandidatosYGenerarClaves (List<Integer> idCandidatos){
+    public List<CandidatoClaveDTO> buscarCandidatosYGenerarClaves(List<Integer> idCandidatos) {
         List<Candidato> candidatosClave = candidatoDAO.findByNroCandidatoInAndEliminadoFalse(idCandidatos);
         List<CandidatoClaveDTO> candidatoClaveDTOs = new ArrayList<CandidatoClaveDTO>();
 
-        for(Candidato c: candidatosClave){
+        for (Candidato c : candidatosClave) {
             candidatoClaveDTOs.add(generarCandidatoClaveDTO(c, generarClaveCandidato()));
         }
 
         return candidatoClaveDTOs;
     }
 
-    private String generarClaveCandidato (){
+    private String generarClaveCandidato() {
         String clave;
         do {
             StringBuilder sb = new StringBuilder(8);
@@ -186,7 +187,7 @@ public class EvaluadorCandidato {
         return clave;
     }
 
-    private CandidatoClaveDTO generarCandidatoClaveDTO (Candidato c, String clave){
+    private CandidatoClaveDTO generarCandidatoClaveDTO(Candidato c, String clave) {
         Integer nro_candidato = c.getNroCandidato();
         String nombre = c.getNombre();
         String apellido = c.getApellido();
@@ -196,24 +197,24 @@ public class EvaluadorCandidato {
         return new CandidatoClaveDTO(nro_candidato, nombre, apellido, tipoDocumento, nroDocumento, clave);
     }
 
-    @Transactional 
-    public void guardarInformacion (List<CandidatoClaveDTO> candidatosLista, String codigoPuesto){
+    @Transactional
+    public void guardarInformacion(List<CandidatoClaveDTO> candidatosLista, String codigoPuesto) {
         List<Cuestionario> evaluaciones = new ArrayList<Cuestionario>();
         Puesto puesto = puestoDAO.getReferenceById(codigoPuesto);
         LocalDateTime now = LocalDateTime.now();
         EstadoCuestionario estadoActivo = estadoCuestionarioDAO.getReferenceById(1);
 
-        for(CandidatoClaveDTO c: candidatosLista){
+        for (CandidatoClaveDTO c : candidatosLista) {
             Candidato candidato = candidatoDAO.getReferenceById(c.getNro_candidato());
-           
+
             Cuestionario cuestionario = Cuestionario.builder()
-                .clave(c.getClaveGenerada())
-                .fechaCreacion(now)
-                .cantidadAccesos(0)
-                .candidato(candidato)
-                .puesto(puesto)
-                .estado(estadoActivo)
-                .build();
+                    .clave(c.getClaveGenerada())
+                    .fechaCreacion(now)
+                    .cantidadAccesos(0)
+                    .candidato(candidato)
+                    .puesto(puesto)
+                    .estado(estadoActivo)
+                    .build();
 
             evaluaciones.add(cuestionario);
         }
@@ -221,4 +222,3 @@ public class EvaluadorCandidato {
         cuestionarioDAO.saveAll(evaluaciones);
     }
 }
-
