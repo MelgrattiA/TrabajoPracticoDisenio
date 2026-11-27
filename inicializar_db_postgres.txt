@@ -1,0 +1,218 @@
+-- Carga de datos iniciales para trabajointegrador.
+-- Primero inicia la aplicacion para que JPA cree las tablas
+-- (spring.jpa.hibernate.ddl-auto=update). Luego ejecuta:
+--   psql -U admin -h localhost -d gestion_evaluaciones -f inicializar_db_postgres.txt
+-- Los IDs son fijos; los conflictos con registros ya cargados se omiten.
+-- Este archivo no crea ni borra la base de datos o sus tablas.
+
+\set ON_ERROR_STOP on
+\connect gestion_evaluaciones
+
+BEGIN;
+
+SET search_path TO public;
+
+-- Catalogo fijo definido por el proyecto.
+INSERT INTO estado_cuestionario (id_estado_cuestionario, nombre) VALUES
+    (1, 'Activo'),
+    (2, 'En Proceso'),
+    (3, 'Completo'),
+    (4, 'Incompleto'),
+    (5, 'Sin Contestar')
+ON CONFLICT DO NOTHING;
+
+-- Datos de demostracion. Las inserciones respetan las claves foraneas:
+-- primero entidades independientes y luego las que dependen de ellas.
+INSERT INTO usuario (nombre_usuario, perfil) VALUES
+    ('usuario_demo', 'ADMIN')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO registro_eliminacion
+    (id_registro_eliminacion, nombre_usuario, fecha, hora)
+OVERRIDING SYSTEM VALUE
+VALUES
+    (1, 'usuario_demo', CURRENT_DATE, LOCALTIME)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO registro_actualizacion_de_estado
+    (id_registro_actualizacion, fecha, hora, accion)
+OVERRIDING SYSTEM VALUE
+VALUES
+    (1, CURRENT_DATE, LOCALTIME, 'Inicializacion de datos de demostracion')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO competencia (codigo, nombre, descripcion, eliminado) VALUES
+    (10, 'Analisis', 'Analisis y resolucion de problemas', false),
+    (1, 'Resolución de Problemas', NULL, false),
+    (2, 'Trabajo en Equipo', NULL, false),
+    (3, 'Liderazgo Estratégico', NULL, false)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO puesto
+    (codigo_puesto, nombre_puesto, descripcion, empresa, eliminado)
+VALUES
+    ('DEV-001', 'Desarrollador de software', 'Puesto de demostracion', 'Empresa Demo', false),
+    ('PUESTO01', 'Desarrollador Backend Java', NULL, 'Crypton Future Media', false),
+    ('PUESTO02', 'Tech Lead', NULL, 'Teto Labs', false),
+    ('PUESTO03', 'Arquitecto Cloud', NULL, 'Vocaloid Corp', false)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO candidato
+    (nro_candidato, apellido, nombre, tipo_documento, nro_documento,
+     fecha_nacimiento, genero, nacionalidad, email, escolaridad, eliminado)
+VALUES
+    (1001, 'Perez', 'Alex', 'DNI', 30000000, DATE '1990-04-15',
+     'No especificado', 'Argentina', 'candidato@example.invalid',
+     'Universitario', false),
+    (1, 'Hatsune', 'Miku', 'DNI', 39010831, DATE '2007-08-31',
+     'Femenino', 'Japonesa', 'miku.hatsune@crypton.jp',
+     'Universitario Completo', false),
+    (2, 'Kasane', 'Teto', 'DNI', 40010401, DATE '2008-04-01',
+     'Femenino', 'Japonesa', 'teto.kasane@utau.jp',
+     'Universitario en Curso', false),
+    (3, 'Jake', 'Peralta', 'DNI', 34567890, DATE '1985-06-15',
+     'Masculino', 'Estadounidense', 'jake.peralta@nypd.gov',
+     'Universitario Completo', false),
+    (4, 'Megurine', 'Luka', 'DNI', 38010130, DATE '2009-01-30',
+     'Femenino', 'Japonesa', 'luka.megurine@crypton.jp', 'Posgrado', false),
+    (5, 'Kagamine', 'Len', 'DNI', 41021227, DATE '2007-12-27',
+     'Masculino', 'Japonesa', 'len.kagamine@crypton.jp',
+     'Secundario Completo', true),
+    (6, 'Pedro', 'Picapiedra', 'DNI', 38010131, DATE '2009-01-30',
+     'Masculino', 'Inglesa', 'pedro.piedra@gmail.com', 'Posgrado', false),
+    (7, 'Pedro', 'Pedrin', 'DNI', 38010132, DATE '2009-01-30',
+     'Femenino', 'Argentina', 'pedrin@hotmail.ar', 'Posgrado', false)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO opcion_respuesta
+    (id_opcion_respuesta, nombre, descripcion, eliminado)
+OVERRIDING SYSTEM VALUE
+VALUES
+    (1, 'Escala de acuerdo', 'Escala de tres opciones para demostracion', false),
+    (2, 'opción 1', 'MIKU MIKU', false),
+    (3, 'opción 2', 'TETO MIKU', false),
+    (4, 'opción 3', 'MIKU TETO', false),
+    (5, 'opción 4', 'TETO TETO', false)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO factor
+    (codigo, nombre, descripcion, nro_orden, codigo_competencia, eliminado)
+VALUES
+    (100, 'Pensamiento analitico', 'Evaluacion del analisis', 1, 10, false),
+    (1, 'Análisis Lógico', NULL, 1, 1, false),
+    (2, 'Comunicación Colaborativa', NULL, 1, 2, false),
+    (3, 'Toma de Decisiones Críticas', NULL, 1, 3, false)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO item_opcion
+    (id_item_opcion, orden_visualizacion, descripcion, id_opcion_respuesta)
+OVERRIDING SYSTEM VALUE
+VALUES
+    (1, 1, 'En desacuerdo', 1),
+    (2, 2, 'Neutral', 1),
+    (3, 3, 'De acuerdo', 1)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO pregunta
+    (codigo, nombre, pregunta, descripcion, codigo_factor,
+     id_opcion_respuesta, eliminado)
+OVERRIDING SYSTEM VALUE
+VALUES
+    (1000, 'Resolucion de problemas',
+     'Analiza problemas antes de proponer soluciones',
+     'Pregunta de demostracion para evaluar el pensamiento analitico',
+     100, 1, false),
+    (1, 'pregunta 1',
+     '¿Cómo abordás un cuello de botella en producción sin documentación previa?',
+     'hola', 1, 2, false),
+    (2, 'pregunta 2',
+     'Describí una situación donde tuviste que elegir entre dos arquitecturas con compromisos opuestos.',
+     'hola', 1, 2, false),
+    (3, 'pregunta 3',
+     '¿Cómo gestionás desacuerdos técnicos durante una revisión de código?',
+     'hola', 2, 3, false),
+    (4, 'pregunta 4',
+     '¿Qué estrategias usás para alinear objetivos entre desarrollo y producto?',
+     'hola', 2, 3, false),
+    (5, 'pregunta 5',
+     'Contá una experiencia ayudando a destrabar el trabajo de otro integrante del equipo.',
+     'hola', 2, 3, false),
+    (6, 'pregunta 6',
+     '¿Cómo definís prioridades trimestrales bajo incertidumbre presupuestaria?',
+     'hola', 3, 5, false),
+    (7, 'pregunta 7',
+     'Pregunta dada de baja que no debe contabilizarse.',
+     'hola', 3, 5, true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO caracteristica_puesto
+    (codigo_puesto, codigo_competencia, ponderacion_minima)
+VALUES
+    ('DEV-001', 10, 3.00),
+    ('PUESTO01', 1, 60.00),
+    ('PUESTO01', 2, 40.00),
+    ('PUESTO02', 1, 50.00),
+    ('PUESTO02', 3, 50.00)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO cuestionario
+    (clave, fecha_creacion, fecha_inicio, fecha_ultimo_ingreso,
+     fecha_finalizacion, cantidad_accesos, puntaje_final,
+     nro_candidato, codigo_puesto, estado_id)
+VALUES
+    ('CUEST-DEMO-001', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 5.00,
+     1001, 'DEV-001', 3),
+    ('ACTIVO99', CURRENT_TIMESTAMP, NULL, NULL, NULL, 0, NULL,
+     3, 'PUESTO01', 1),
+    ('FINALI88', CURRENT_TIMESTAMP - INTERVAL '10 days', NULL, NULL, NULL,
+     2, NULL, 4, 'PUESTO01', 3)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO bloque_pregunta
+    (id_bloque_pregunta, nro_orden, clave_cuestionario)
+OVERRIDING SYSTEM VALUE
+VALUES
+    (1, 1, 'CUEST-DEMO-001')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO pregunta_bloque
+    (id_pregunta_bloque, orden_en_bloque, id_bloque_pregunta,
+     codigo_pregunta, item_opcion_seleccionada)
+OVERRIDING SYSTEM VALUE
+VALUES
+    (1, 1, 1, 1000, 3)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO ponderacion_item
+    (id_ponderacion_item, ponderacion, codigo_pregunta, id_item_opcion)
+OVERRIDING SYSTEM VALUE
+VALUES
+    (1, 5.00, 1000, 3)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO resultado_competencia
+    (clave_cuestionario, codigo_puesto, codigo_competencia, puntaje_obtenido)
+VALUES
+    ('CUEST-DEMO-001', 'DEV-001', 10, 5.00)
+ON CONFLICT DO NOTHING;
+
+-- Sincronizar las identidades luego de insertar IDs explicitos.
+SELECT setval(pg_get_serial_sequence('public.registro_eliminacion', 'id_registro_eliminacion'),
+              (SELECT MAX(id_registro_eliminacion) FROM registro_eliminacion), true);
+SELECT setval(pg_get_serial_sequence('public.registro_actualizacion_de_estado', 'id_registro_actualizacion'),
+              (SELECT MAX(id_registro_actualizacion) FROM registro_actualizacion_de_estado), true);
+SELECT setval(pg_get_serial_sequence('public.opcion_respuesta', 'id_opcion_respuesta'),
+              (SELECT MAX(id_opcion_respuesta) FROM opcion_respuesta), true);
+SELECT setval(pg_get_serial_sequence('public.item_opcion', 'id_item_opcion'),
+              (SELECT MAX(id_item_opcion) FROM item_opcion), true);
+SELECT setval(pg_get_serial_sequence('public.pregunta', 'codigo'),
+              (SELECT MAX(codigo) FROM pregunta), true);
+SELECT setval(pg_get_serial_sequence('public.bloque_pregunta', 'id_bloque_pregunta'),
+              (SELECT MAX(id_bloque_pregunta) FROM bloque_pregunta), true);
+SELECT setval(pg_get_serial_sequence('public.pregunta_bloque', 'id_pregunta_bloque'),
+              (SELECT MAX(id_pregunta_bloque) FROM pregunta_bloque), true);
+SELECT setval(pg_get_serial_sequence('public.ponderacion_item', 'id_ponderacion_item'),
+              (SELECT MAX(id_ponderacion_item) FROM ponderacion_item), true);
+
+COMMIT;
