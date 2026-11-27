@@ -9,7 +9,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,5 +138,191 @@ class TrabajointegradorApplicationTests {
 		assertThat(predicate).contains("estado_id");
 		assertThat(predicate).contains("1");
 		assertThat(predicate).contains("2");
+	}
+
+	@Test
+	void preguntaUsesIdentityAndDocumentedLengths() {
+		Map<String, Object> codigo = jdbcTemplate.queryForMap(
+				"""
+				SELECT is_identity, identity_generation
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+				  AND table_name = 'pregunta'
+				  AND column_name = 'codigo'
+				""");
+		assertThat(codigo.get("is_identity")).isEqualTo("YES");
+
+		List<Map<String, Object>> columns = jdbcTemplate.queryForList(
+				"""
+				SELECT column_name, character_maximum_length
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+				  AND table_name = 'pregunta'
+				  AND column_name IN ('nombre', 'pregunta', 'descripcion')
+				""");
+		assertThat(columns)
+				.extracting(row -> (String) row.get("column_name"))
+				.containsExactlyInAnyOrder("nombre", "pregunta", "descripcion");
+		assertThat(columns)
+				.extracting(row -> Map.entry(
+						(String) row.get("column_name"),
+						((Number) row.get("character_maximum_length")).intValue()))
+				.containsExactlyInAnyOrder(
+						Map.entry("nombre", 100),
+						Map.entry("pregunta", 150),
+						Map.entry("descripcion", 500));
+	}
+
+	@Test
+	void numericColumnsUsePrecision38AndScale2() {
+		List<Map<String, Object>> columns = jdbcTemplate.queryForList(
+				"""
+				SELECT table_name, column_name, numeric_precision, numeric_scale
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+				  AND (
+				    (table_name = 'ponderacion_item' AND column_name = 'ponderacion')
+				    OR (table_name = 'caracteristica_puesto'
+				        AND column_name = 'ponderacion_minima')
+				    OR (table_name = 'resultado_competencia'
+				        AND column_name = 'puntaje_obtenido')
+				    OR (table_name = 'cuestionario' AND column_name = 'puntaje_final')
+				  )
+				""");
+
+		assertThat(columns).hasSize(4);
+		for (Map<String, Object> column : columns) {
+			assertThat(((Number) column.get("numeric_precision")).intValue()).isEqualTo(38);
+			assertThat(((Number) column.get("numeric_scale")).intValue()).isEqualTo(2);
+		}
+	}
+
+	@Test
+	void noNormalUniqueConstraintsAndPartialIndexesRemainForPreguntas() {
+		List<String> uniqueConstraints = jdbcTemplate.queryForList(
+				"""
+				SELECT conname
+				FROM pg_constraint
+				WHERE conrelid = 'public.pregunta'::regclass
+				  AND contype = 'u'
+				""",
+				String.class);
+		assertThat(uniqueConstraints)
+				.doesNotContain(
+						"uk_pregunta_factor_nombre",
+						"uk_pregunta_factor_texto");
+
+		List<String> partialIndexes = jdbcTemplate.queryForList(
+				"""
+				SELECT pg_get_indexdef(i.indexrelid)
+				FROM pg_index i
+				JOIN pg_class table_relation ON table_relation.oid = i.indrelid
+				WHERE table_relation.relname = 'pregunta'
+				  AND i.indisunique
+				  AND pg_get_expr(i.indpred, i.indrelid) LIKE '%eliminado = false%'
+				""",
+				String.class);
+		assertThat(partialIndexes).hasSize(2);
+		assertThat(String.join(" ", partialIndexes))
+				.contains("upper(btrim");
+	}
+
+	@Test
+	@Transactional
+	void generatedPreguntaCodesDoNotCollideAndBigDecimalPersistsWithScale2() {
+		jdbcTemplate.update(
+				"""
+				INSERT INTO competencia (codigo, nombre, descripcion, eliminado)
+				VALUES (901, 'COMUNICACION', 'PRUEBA', false)
+				ON CONFLICT (codigo) DO NOTHING
+				""");
+		jdbcTemplate.update(
+				"""
+				INSERT INTO factor (
+				    codigo, nombre, descripcion, nro_orden, codigo_competencia, eliminado
+				)
+				VALUES (901, 'ORAL', 'PRUEBA', 1, 901, false)
+				ON CONFLICT (codigo) DO NOTHING
+				""");
+		jdbcTemplate.update(
+				"""
+				INSERT INTO opcion_respuesta (nombre, descripcion, eliminado)
+				VALUES ('ESCALA CU21', 'PRUEBA', false)
+				ON CONFLICT (nombre) DO NOTHING
+				""");
+		Long opcionId = jdbcTemplate.queryForObject(
+				"SELECT id_opcion_respuesta FROM opcion_respuesta "
+						+ "WHERE nombre = 'ESCALA CU21'",
+				Long.class);
+		jdbcTemplate.update(
+				"""
+				INSERT INTO item_opcion (
+				    orden_visualizacion, descripcion, id_opcion_respuesta
+				)
+				VALUES (1, 'NADA', ?), (2, 'POCO', ?)
+				""",
+				opcionId,
+				opcionId);
+
+		List<Long> itemIds = jdbcTemplate.queryForList(
+				"""
+				SELECT id_item_opcion
+				FROM item_opcion
+				WHERE id_opcion_respuesta = ?
+				ORDER BY orden_visualizacion
+				""",
+				Long.class,
+				opcionId);
+
+		Integer codigoUno = jdbcTemplate.queryForObject(
+				"""
+				INSERT INTO pregunta (
+				    nombre, pregunta, descripcion,
+				    codigo_factor, id_opcion_respuesta, eliminado
+				)
+				VALUES ('PREGUNTA UNO', 'TEXTO UNO', 'DESCRIPCION', 901, ?, false)
+				RETURNING codigo
+				""",
+				Integer.class,
+				opcionId);
+
+		Integer codigoDos = jdbcTemplate.queryForObject(
+				"""
+				INSERT INTO pregunta (
+				    nombre, pregunta, descripcion,
+				    codigo_factor, id_opcion_respuesta, eliminado
+				)
+				VALUES ('PREGUNTA DOS', 'TEXTO DOS', 'DESCRIPCION', 901, ?, false)
+				RETURNING codigo
+				""",
+				Integer.class,
+				opcionId);
+
+		assertThat(codigoDos).isGreaterThan(codigoUno);
+
+		jdbcTemplate.update(
+				"""
+				INSERT INTO ponderacion_item (
+				    ponderacion, codigo_pregunta, id_item_opcion
+				)
+				VALUES (?, ?, ?)
+				""",
+				new BigDecimal("3.00"),
+				codigoUno,
+				itemIds.get(0));
+
+		Map<String, Object> value = jdbcTemplate.queryForMap(
+				"""
+				SELECT ponderacion, scale(ponderacion) AS escala
+				FROM ponderacion_item
+				WHERE codigo_pregunta = ?
+				  AND id_item_opcion = ?
+				""",
+				codigoUno,
+				itemIds.get(0));
+
+		assertThat(((BigDecimal) value.get("ponderacion")).compareTo(new BigDecimal("3.00")))
+				.isZero();
+		assertThat(((Number) value.get("escala")).intValue()).isEqualTo(2);
 	}
 }

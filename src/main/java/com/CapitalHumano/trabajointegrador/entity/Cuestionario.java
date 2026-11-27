@@ -48,7 +48,7 @@ public class Cuestionario {
     @Column(name = "cantidad_accesos")
     private Integer cantidadAccesos;
 
-    @Column(name = "puntaje_final")
+    @Column(name = "puntaje_final", precision = 38, scale = 2)
     private BigDecimal puntajeFinal;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
