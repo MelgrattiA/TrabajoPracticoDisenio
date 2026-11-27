@@ -535,7 +535,7 @@ public class GestorCuestionario {
         }
 
         // Se calcula la suma de ponderaciones por competencia y factor.
-        Map<Integer, Map<Integer, Integer>> sumaPorCompetenciaYFactor = new HashMap<>();
+        Map<Integer, Map<Integer, BigDecimal>> sumaPorCompetenciaYFactor = new HashMap<>();
 
         // Se recorre cada respuesta y se obtiene la ponderación correspondiente.
         for (PreguntaBloque respuesta : respuestas) {
@@ -556,7 +556,7 @@ public class GestorCuestionario {
             // Se acumula la ponderación en la suma por competencia y factor.
             sumaPorCompetenciaYFactor
                     .computeIfAbsent(codigoCompetencia, clave -> new HashMap<>())
-                    .merge(codigoFactor, ponderacion.getPonderacion(), Integer::sum);
+                    .merge(codigoFactor, ponderacion.getPonderacion(), BigDecimal::add);
         }
 
         // Se buscan las competencias evaluadas para el puesto del cuestionario.
@@ -577,7 +577,7 @@ public class GestorCuestionario {
 
             Integer codigoCompetencia = caracteristica.getCompetencia().getCodigo();
 
-            Map<Integer, Integer> sumasFactores =
+            Map<Integer, BigDecimal> sumasFactores =
                     sumaPorCompetenciaYFactor.get(codigoCompetencia);
 
             if (sumasFactores == null || sumasFactores.isEmpty()) {
@@ -587,10 +587,10 @@ public class GestorCuestionario {
 
             // Se calcula el puntaje final de la competencia como el promedio de los puntajes de sus factores.
             BigDecimal sumaFactores = BigDecimal.ZERO;
-            for (Integer sumaFactor : sumasFactores.values()) {
+            for (BigDecimal sumaFactor : sumasFactores.values()) {
                 sumaFactores = sumaFactores.add(
-                        BigDecimal.valueOf(sumaFactor)
-                                .divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP));
+                        sumaFactor.divide(
+                                BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP));
             }
 
             // Se calcula el puntaje final de la competencia como el promedio de los puntajes de sus factores.
