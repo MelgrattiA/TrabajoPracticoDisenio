@@ -9,7 +9,10 @@ import com.CapitalHumano.trabajointegrador.entity.ItemOpcion;
 
 @Repository
 public interface ItemOpcionDAO extends JpaRepository<ItemOpcion, Long> {
-
     List<ItemOpcion> findByOpcionRespuestaIdOpcionRespuestaOrderByOrdenVisualizacionAsc(
             Long idOpcionRespuesta);
+
+    List<ItemOpcion> findByOpcionRespuestaIdOpcionRespuestaAndOpcionRespuestaEliminadoFalseOrderByOrdenVisualizacionAsc(
+            Long idOpcionRespuesta);
+
 }

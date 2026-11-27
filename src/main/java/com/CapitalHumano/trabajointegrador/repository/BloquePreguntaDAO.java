@@ -13,6 +13,10 @@ import com.CapitalHumano.trabajointegrador.entity.BloquePregunta;
 public interface BloquePreguntaDAO
         extends JpaRepository<BloquePregunta, Long> {
 
+    boolean existsByCuestionarioClave(String claveCuestionario);
+
+    long countByCuestionarioClave(String claveCuestionario);
+
     @Query("""
             SELECT DISTINCT b
             FROM BloquePregunta b

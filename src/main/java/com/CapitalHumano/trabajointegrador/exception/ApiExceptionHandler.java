@@ -42,6 +42,12 @@ public class ApiExceptionHandler {
         return crearRespuesta(HttpStatus.BAD_REQUEST, excepcion.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ProblemDetail> manejarConflictoDeEstado(
+            IllegalStateException excepcion) {
+        return crearRespuesta(HttpStatus.CONFLICT, excepcion.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetail> manejarErroresDeValidacion(
             MethodArgumentNotValidException excepcion) {
@@ -70,7 +76,7 @@ public class ApiExceptionHandler {
     public ResponseEntity<ProblemDetail> manejarPuestoSinCompetencias(
             PuestoSinCompetenciasException excepcion) {
         return crearRespuesta(
-                    HttpStatus.UNPROCESSABLE_CONTENT, excepcion.getMessage());
+                HttpStatus.UNPROCESSABLE_CONTENT, excepcion.getMessage());
     }
 
     private ResponseEntity<ProblemDetail> crearRespuesta(
