@@ -1,6 +1,7 @@
 # TrabajoPracticoDiseño
 Trabajo Practico de Diseño de Sistemas entrega 7 y 8
 # Pasos para ejecutar el programa:
+- Puede ser necesario usar más de una terminal
 ## Levantar la DB (PostgresSQL)
 ### En Linux:
 1. Iniciar PostgresSQL `sudo systemctl start postgresql`
@@ -8,13 +9,13 @@ Trabajo Practico de Diseño de Sistemas entrega 7 y 8
 2. Si es la primera vez se debe ejecutar:
    - creación del usuario `sudo -u postgres psql -c "CREATE USER admin WITH SUPERUSER PASSWORD 'admin';"`
    - creación de la base `sudo -u postgres psql -c "CREATE DATABASE gestion_evaluaciones OWNER admin;"`
-### En Windows(PowerShell):
+### En Windows(PowerShell como administrador):
 1. Iniciar PostgresSQL `net start postgresql-x64-XX` (XX remplazar por número de versión instalada)
 2. Si es la primera vez se debe ejecutar:
    - creación del usuario `psql -U postgres -c "CREATE USER admin WITH SUPERUSER PASSWORD 'admin';"`
    - creación de la base `psql -U postgres -c "CREATE DATABASE gestion_evaluaciones OWNER admin;"`
 ## Descargar y levantar Backend 
-1. Clonar el repositorio `git clone git@github.com:MelgrattiA/TrabajoPracticoDisenio.git`
+1. Clonar el repositorio `git clone https://github.com/MelgrattiA/TrabajoPracticoDisenio.git`
 2. Moverse a la carpeta del programa `cd TrabajoPracticoDisenio`
       ### En Linux:
       - Ejecutar el backend con `DB_USERNAME=admin DB_PASSWORD=admin ./mvnw spring-boot:run`
