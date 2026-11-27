@@ -83,7 +83,7 @@ export default function GestorPreguntasPage() {
     };
 
     const handleNuevo = () => {
-        router.push("/preguntas/nuevo");
+        router.push("/api/preguntas/nuevo");
     };
 
     const handleSeleccionar = (item) => {
