@@ -1,10 +1,11 @@
 package com.CapitalHumano.trabajointegrador.repository;
 
-import java.util.Optional;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.CapitalHumano.trabajointegrador.entity.BloquePregunta;
@@ -26,6 +27,7 @@ public interface BloquePreguntaDAO
               AND pb.itemOpcionSeleccionada IS NULL
             ORDER BY b.nroOrden ASC
             """)
-    Optional<BloquePregunta> buscarBloquePendiente(
-            @Param("claveCuestionario") String claveCuestionario);
+    List<BloquePregunta> buscarBloquesPendientes(
+            @Param("claveCuestionario") String claveCuestionario,
+            Pageable pageable);
 }

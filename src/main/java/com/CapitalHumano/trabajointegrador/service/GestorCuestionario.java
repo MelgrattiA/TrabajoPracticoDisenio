@@ -6,6 +6,7 @@ import java.time.LocalTime;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 
 import com.CapitalHumano.trabajointegrador.dto.RegistroActualizacionDeEstadoDTO;
 import com.CapitalHumano.trabajointegrador.dto.BloquePreguntaDTO;
@@ -44,6 +45,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -411,8 +413,7 @@ public class GestorCuestionario {
     }
 
     public List<Pregunta> recuperarBloquePendiente(Cuestionario cuestionario) {
-        BloquePregunta bloquePendiente = bloquePreguntaDAO
-                .buscarBloquePendiente(cuestionario.getClave())
+        BloquePregunta bloquePendiente = buscarPrimerBloquePendiente(cuestionario.getClave())
                 .orElseThrow(() -> new IllegalStateException(
                         "No existe un bloque pendiente para el cuestionario"));
 
@@ -421,10 +422,18 @@ public class GestorCuestionario {
 
     @Transactional
     public BloquePreguntaDTO obtenerBloquePendiente(String claveCuestionario) {
-        BloquePregunta bloque = bloquePreguntaDAO.buscarBloquePendiente(claveCuestionario)
+        BloquePregunta bloque = buscarPrimerBloquePendiente(claveCuestionario)
                 .orElseThrow(() -> new IllegalStateException(
                         "No existe un bloque pendiente para el cuestionario"));
         return convertirBloque(bloque);
+    }
+
+    private Optional<BloquePregunta> buscarPrimerBloquePendiente(
+            String claveCuestionario) {
+        return bloquePreguntaDAO.buscarBloquesPendientes(
+                        claveCuestionario, PageRequest.of(0, 1))
+                .stream()
+                .findFirst();
     }
 
     @Transactional
@@ -505,8 +514,7 @@ public class GestorCuestionario {
         preguntaBloqueDAO.saveAll(preguntas);
 
         // Se busca el siguiente bloque pendiente, si no hay, se completa el cuestionario.
-        BloquePregunta siguiente = bloquePreguntaDAO
-                .buscarBloquePendiente(claveCuestionario)
+        BloquePregunta siguiente = buscarPrimerBloquePendiente(claveCuestionario)
                 .orElse(null);
         if (siguiente == null) {
             calcularPuntajes(cuestionario);
