@@ -18,7 +18,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.CapitalHumano.trabajointegrador.dto.CandidatoRestauracionPreguntaDTO;
+import com.CapitalHumano.trabajointegrador.dto.CompetenciaCatalogoDTO;
 import com.CapitalHumano.trabajointegrador.dto.ConflictoPreguntaDTO;
+import com.CapitalHumano.trabajointegrador.dto.FactorCatalogoDTO;
+import com.CapitalHumano.trabajointegrador.dto.ItemOpcionCatalogoDTO;
+import com.CapitalHumano.trabajointegrador.dto.OpcionRespuestaCatalogoDTO;
 import com.CapitalHumano.trabajointegrador.dto.PonderacionItemResponseDTO;
 import com.CapitalHumano.trabajointegrador.dto.PreguntaCreadaDTO;
 import com.CapitalHumano.trabajointegrador.dto.PreguntaDTO;
@@ -26,6 +30,7 @@ import com.CapitalHumano.trabajointegrador.dto.PreguntaEliminadaRestaurableDTO;
 import com.CapitalHumano.trabajointegrador.exception.ApiExceptionHandler;
 import com.CapitalHumano.trabajointegrador.exception.PreguntaConflictoException;
 import com.CapitalHumano.trabajointegrador.exception.PreguntaNoEncontradaException;
+import com.CapitalHumano.trabajointegrador.exception.RecursoCatalogoNoEncontradoException;
 import com.CapitalHumano.trabajointegrador.service.GestorPregunta;
 
 @WebMvcTest(PreguntaController.class)
@@ -189,6 +194,108 @@ class PreguntaControllerTest {
                 .andExpect(jsonPath("$[0].competencia").value("Competencia"))
                 .andExpect(jsonPath("$[0].factor").value("Factor"))
                 .andExpect(jsonPath("$[0].pregunta").value("Pregunta"));
+    }
+
+    @Test
+    void obtieneCompetenciasDelCatalogo() throws Exception {
+        when(gestorPregunta.listarCompetenciasDisponibles())
+                .thenReturn(List.of(new CompetenciaCatalogoDTO(
+                        3,
+                        "COMPETENCIA")));
+
+        mockMvc.perform(get("/api/preguntas/competencias"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].codigo").value(3))
+                .andExpect(jsonPath("$[0].nombre").value("COMPETENCIA"));
+    }
+
+    @Test
+    void obtieneFactoresDelCatalogo() throws Exception {
+        when(gestorPregunta.listarFactoresDisponibles(3))
+                .thenReturn(List.of(
+                        new FactorCatalogoDTO(7, "FACTOR 1", 1),
+                        new FactorCatalogoDTO(8, "FACTOR 2", 2)));
+
+        mockMvc.perform(get("/api/preguntas/competencias/3/factores"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].codigo").value(7))
+                .andExpect(jsonPath("$[0].nombre").value("FACTOR 1"))
+                .andExpect(jsonPath("$[0].nroOrden").value(1))
+                .andExpect(jsonPath("$[1].nroOrden").value(2));
+    }
+
+    @Test
+    void obtieneOpcionesDeRespuestaDelCatalogo() throws Exception {
+        when(gestorPregunta.listarOpcionesRespuestaDisponibles())
+                .thenReturn(List.of(new OpcionRespuestaCatalogoDTO(
+                        12L,
+                        "OPCIÓN")));
+
+        mockMvc.perform(get("/api/preguntas/opciones-respuesta"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].idOpcionRespuesta").value(12))
+                .andExpect(jsonPath("$[0].nombre").value("OPCIÓN"));
+    }
+
+    @Test
+    void obtieneItemsDeOpcionOrdenados() throws Exception {
+        when(gestorPregunta.listarItemsDisponibles(12L))
+                .thenReturn(List.of(
+                        new ItemOpcionCatalogoDTO(21L, "PRIMERO", 1),
+                        new ItemOpcionCatalogoDTO(22L, "SEGUNDO", 2)));
+
+        mockMvc.perform(get("/api/preguntas/opciones-respuesta/12/items"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].idItemOpcion").value(21))
+                .andExpect(jsonPath("$[0].descripcion").value("PRIMERO"))
+                .andExpect(jsonPath("$[0].ordenVisualizacion").value(1))
+                .andExpect(jsonPath("$[1].ordenVisualizacion").value(2));
+    }
+
+    @Test
+    void catalogosSinResultadosDevuelvenListasVacias() throws Exception {
+        when(gestorPregunta.listarCompetenciasDisponibles()).thenReturn(List.of());
+        when(gestorPregunta.listarFactoresDisponibles(3)).thenReturn(List.of());
+        when(gestorPregunta.listarOpcionesRespuestaDisponibles())
+                .thenReturn(List.of());
+        when(gestorPregunta.listarItemsDisponibles(12L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/preguntas/competencias"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        mockMvc.perform(get("/api/preguntas/competencias/3/factores"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        mockMvc.perform(get("/api/preguntas/opciones-respuesta"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        mockMvc.perform(get("/api/preguntas/opciones-respuesta/12/items"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void padreDeFactoresNoDisponibleDevuelve404() throws Exception {
+        when(gestorPregunta.listarFactoresDisponibles(999))
+                .thenThrow(new RecursoCatalogoNoEncontradoException(
+                        "la competencia",
+                        999));
+
+        mockMvc.perform(get("/api/preguntas/competencias/999/factores"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void padreDeItemsNoDisponibleDevuelve404() throws Exception {
+        when(gestorPregunta.listarItemsDisponibles(999L))
+                .thenThrow(new RecursoCatalogoNoEncontradoException(
+                        "la opción de respuesta",
+                        999L));
+
+        mockMvc.perform(get("/api/preguntas/opciones-respuesta/999/items"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
     }
 
     private String requestValido() {

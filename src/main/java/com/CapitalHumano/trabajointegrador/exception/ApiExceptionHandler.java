@@ -30,6 +30,12 @@ public class ApiExceptionHandler {
         return crearRespuesta(HttpStatus.NOT_FOUND, excepcion.getMessage());
     }
 
+    @ExceptionHandler(RecursoCatalogoNoEncontradoException.class)
+    public ResponseEntity<ProblemDetail> manejarRecursoCatalogoNoEncontrado(
+            RecursoCatalogoNoEncontradoException excepcion) {
+        return crearRespuesta(HttpStatus.NOT_FOUND, excepcion.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ProblemDetail> manejarSolicitudInvalida(
             IllegalArgumentException excepcion) {

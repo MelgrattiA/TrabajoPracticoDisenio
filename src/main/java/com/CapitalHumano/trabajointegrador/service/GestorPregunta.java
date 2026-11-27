@@ -18,7 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.CapitalHumano.trabajointegrador.dto.CandidatoRestauracionPreguntaDTO;
 import com.CapitalHumano.trabajointegrador.dto.ConflictoPreguntaDTO;
+import com.CapitalHumano.trabajointegrador.dto.CompetenciaCatalogoDTO;
 import com.CapitalHumano.trabajointegrador.dto.CrearPreguntaRequest;
+import com.CapitalHumano.trabajointegrador.dto.FactorCatalogoDTO;
+import com.CapitalHumano.trabajointegrador.dto.ItemOpcionCatalogoDTO;
+import com.CapitalHumano.trabajointegrador.dto.OpcionRespuestaCatalogoDTO;
 import com.CapitalHumano.trabajointegrador.dto.PonderacionItemRequest;
 import com.CapitalHumano.trabajointegrador.dto.PonderacionItemResponseDTO;
 import com.CapitalHumano.trabajointegrador.dto.PreguntaCreadaDTO;
@@ -32,6 +36,7 @@ import com.CapitalHumano.trabajointegrador.entity.PonderacionItem;
 import com.CapitalHumano.trabajointegrador.entity.Pregunta;
 import com.CapitalHumano.trabajointegrador.exception.PreguntaConflictoException;
 import com.CapitalHumano.trabajointegrador.exception.PreguntaNoEncontradaException;
+import com.CapitalHumano.trabajointegrador.exception.RecursoCatalogoNoEncontradoException;
 import com.CapitalHumano.trabajointegrador.repository.CompetenciaDAO;
 import com.CapitalHumano.trabajointegrador.repository.FactorDAO;
 import com.CapitalHumano.trabajointegrador.repository.ItemOpcionDAO;
@@ -84,6 +89,62 @@ public class GestorPregunta {
         String nomPregunta = pregunta.getNombre();
         
         return new PreguntaDTO(competencia, factor, nomPregunta);
+    }
+
+    public List<CompetenciaCatalogoDTO> listarCompetenciasDisponibles() {
+        return competenciaDAO.findByEliminadoFalseOrderByCodigoAsc().stream()
+                .map(competencia -> new CompetenciaCatalogoDTO(
+                        competencia.getCodigo(),
+                        competencia.getNombre()))
+                .toList();
+    }
+
+    public List<FactorCatalogoDTO> listarFactoresDisponibles(
+            Integer codigoCompetencia) {
+        Competencia competencia = competenciaDAO.findById(codigoCompetencia)
+                .filter(entidad -> !Boolean.TRUE.equals(entidad.getEliminado()))
+                .orElseThrow(() -> new RecursoCatalogoNoEncontradoException(
+                        "la competencia",
+                        codigoCompetencia));
+
+        return factorDAO
+                .findByCompetenciaCodigoAndEliminadoFalseOrderByNroOrdenAsc(
+                        competencia.getCodigo())
+                .stream()
+                .map(factor -> new FactorCatalogoDTO(
+                        factor.getCodigo(),
+                        factor.getNombre(),
+                        factor.getNroOrden()))
+                .toList();
+    }
+
+    public List<OpcionRespuestaCatalogoDTO> listarOpcionesRespuestaDisponibles() {
+        return opcionRespuestaDAO
+                .findByEliminadoFalseOrderByIdOpcionRespuestaAsc()
+                .stream()
+                .map(opcion -> new OpcionRespuestaCatalogoDTO(
+                        opcion.getIdOpcionRespuesta(),
+                        opcion.getNombre()))
+                .toList();
+    }
+
+    public List<ItemOpcionCatalogoDTO> listarItemsDisponibles(
+            Long idOpcionRespuesta) {
+        OpcionRespuesta opcion = opcionRespuestaDAO.findById(idOpcionRespuesta)
+                .filter(entidad -> !Boolean.TRUE.equals(entidad.getEliminado()))
+                .orElseThrow(() -> new RecursoCatalogoNoEncontradoException(
+                        "la opción de respuesta",
+                        idOpcionRespuesta));
+
+        return itemOpcionDAO
+                .findByOpcionRespuestaIdOpcionRespuestaOrderByOrdenVisualizacionAsc(
+                        opcion.getIdOpcionRespuesta())
+                .stream()
+                .map(item -> new ItemOpcionCatalogoDTO(
+                        item.getIdItemOpcion(),
+                        item.getDescripcion(),
+                        item.getOrdenVisualizacion()))
+                .toList();
     }
 
     @Transactional

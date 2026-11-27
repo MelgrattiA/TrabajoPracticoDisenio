@@ -14,7 +14,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.CapitalHumano.trabajointegrador.dto.CandidatoRestauracionPreguntaDTO;
+import com.CapitalHumano.trabajointegrador.dto.CompetenciaCatalogoDTO;
 import com.CapitalHumano.trabajointegrador.dto.CrearPreguntaRequest;
+import com.CapitalHumano.trabajointegrador.dto.FactorCatalogoDTO;
+import com.CapitalHumano.trabajointegrador.dto.ItemOpcionCatalogoDTO;
+import com.CapitalHumano.trabajointegrador.dto.OpcionRespuestaCatalogoDTO;
 import com.CapitalHumano.trabajointegrador.dto.PreguntaCreadaDTO;
 import com.CapitalHumano.trabajointegrador.dto.PreguntaDTO;
 import com.CapitalHumano.trabajointegrador.service.GestorPregunta;
@@ -54,5 +58,30 @@ public class PreguntaController {
     public ResponseEntity<CandidatoRestauracionPreguntaDTO> restaurarPregunta(
             @PathVariable Integer codigo) {
         return ResponseEntity.ok(gestorPregunta.restaurarPregunta(codigo));
+    }
+
+    @GetMapping("/competencias")
+    public ResponseEntity<List<CompetenciaCatalogoDTO>> listarCompetencias() {
+        return ResponseEntity.ok(gestorPregunta.listarCompetenciasDisponibles());
+    }
+
+    @GetMapping("/competencias/{codigoCompetencia}/factores")
+    public ResponseEntity<List<FactorCatalogoDTO>> listarFactores(
+            @PathVariable Integer codigoCompetencia) {
+        return ResponseEntity.ok(
+                gestorPregunta.listarFactoresDisponibles(codigoCompetencia));
+    }
+
+    @GetMapping("/opciones-respuesta")
+    public ResponseEntity<List<OpcionRespuestaCatalogoDTO>> listarOpcionesRespuesta() {
+        return ResponseEntity.ok(
+                gestorPregunta.listarOpcionesRespuestaDisponibles());
+    }
+
+    @GetMapping("/opciones-respuesta/{idOpcionRespuesta}/items")
+    public ResponseEntity<List<ItemOpcionCatalogoDTO>> listarItemsOpcionRespuesta(
+            @PathVariable Long idOpcionRespuesta) {
+        return ResponseEntity.ok(
+                gestorPregunta.listarItemsDisponibles(idOpcionRespuesta));
     }
 }
