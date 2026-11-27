@@ -3,11 +3,12 @@ package com.CapitalHumano.trabajointegrador.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,16 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-        name = "pregunta",
-        uniqueConstraints = {
-            @UniqueConstraint(
-                    name = "uk_pregunta_factor_nombre",
-                    columnNames = {"codigo_factor", "nombre"}),
-            @UniqueConstraint(
-                    name = "uk_pregunta_factor_texto",
-                    columnNames = {"codigo_factor", "pregunta"})
-        })
+@Table(name = "pregunta")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -33,16 +25,17 @@ import lombok.Setter;
 public class Pregunta {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "codigo", nullable = false)
     private Integer codigo;
 
-    @Column(name = "nombre", nullable = false)
+    @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
-    @Column(name = "pregunta", nullable = false)
+    @Column(name = "pregunta", nullable = false, length = 150)
     private String pregunta;
 
-    @Column(name = "descripcion")
+    @Column(name = "descripcion", length = 500)
     private String descripcion;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

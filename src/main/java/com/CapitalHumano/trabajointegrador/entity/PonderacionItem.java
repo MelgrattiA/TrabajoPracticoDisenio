@@ -17,6 +17,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.math.BigDecimal;
+
 @Entity
 @Table(
         name = "ponderacion_item",
@@ -38,8 +40,8 @@ public class PonderacionItem {
     @Column(name = "id_ponderacion_item", nullable = false)
     private Long idPonderacionItem;
 
-    @Column(name = "ponderacion", nullable = false)
-    private Integer ponderacion;
+    @Column(name = "ponderacion", nullable = false, precision = 38, scale = 2)
+    private BigDecimal ponderacion;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(

@@ -38,6 +38,6 @@ public class CaracteristicaPuesto {
     @JoinColumn(name = "codigo_competencia", nullable = false)
     private Competencia competencia;
 
-    @Column(name = "ponderacion_minima", nullable = false)
+    @Column(name = "ponderacion_minima", nullable = false, precision = 38, scale = 2)
     private BigDecimal ponderacionMinima;
 }

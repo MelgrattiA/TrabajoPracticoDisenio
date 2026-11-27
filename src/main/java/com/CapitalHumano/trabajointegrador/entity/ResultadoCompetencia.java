@@ -28,7 +28,7 @@ public class ResultadoCompetencia {
     @EmbeddedId
     private ResultadoCompetenciaId id;
 
-    @Column(name = "puntaje_obtenido", nullable = false)
+    @Column(name = "puntaje_obtenido", nullable = false, precision = 38, scale = 2)
     private BigDecimal puntajeObtenido;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
