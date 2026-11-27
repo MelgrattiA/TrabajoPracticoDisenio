@@ -23,4 +23,20 @@ public interface PreguntaBloqueDAO
             """)
     List<Pregunta> buscarPreguntasPendientes(
             @Param("idBloque") Long idBloque);
+
+    List<PreguntaBloque> findByBloquePreguntaIdBloquePreguntaOrderByOrdenEnBloqueAsc(
+            Long idBloque);
+
+    @Query("""
+            SELECT pb
+            FROM PreguntaBloque pb
+            JOIN FETCH pb.bloquePregunta b
+            JOIN FETCH pb.pregunta p
+            JOIN FETCH p.factor f
+            WHERE b.cuestionario.clave = :claveCuestionario
+              AND pb.itemOpcionSeleccionada IS NOT NULL
+            ORDER BY f.competencia.codigo, f.codigo, pb.idPreguntaBloque
+            """)
+    List<PreguntaBloque> buscarRespondidasPorCuestionario(
+            @Param("claveCuestionario") String claveCuestionario);
 }

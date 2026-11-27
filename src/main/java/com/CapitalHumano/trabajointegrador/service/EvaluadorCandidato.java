@@ -29,6 +29,7 @@ import jakarta.transaction.Transactional;
 
 import com.CapitalHumano.trabajointegrador.entity.Factor;
 import com.CapitalHumano.trabajointegrador.entity.EstadoCuestionario;
+import com.CapitalHumano.trabajointegrador.entity.ConfiguracionSistema;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,6 +44,7 @@ public class EvaluadorCandidato {
     private final PreguntaDAO preguntaDAO;
     private final CuestionarioDAO cuestionarioDAO;
     private final EstadoCuestionarioDAO estadoCuestionarioDAO;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     // Para generar claves
     private static final String CARACTERES_CLAVE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -104,6 +106,8 @@ public class EvaluadorCandidato {
     }
 
     public List<CompetenciaPonderadaDTO> buscarCompetenciasEvaluarValidas(String codPuesto) {
+        ConfiguracionSistema configuracion =
+                configuracionSistemaService.obtenerConfiguracion();
         // Buscamos las competencias y ponderaciones del puesto
         List<CaracteristicaPuesto> caracteristicas = caracteristicaPuestoDAO.buscarCaracteristicaPuesto(codPuesto);
 
@@ -117,7 +121,9 @@ public class EvaluadorCandidato {
         for (CaracteristicaPuesto cp : caracteristicas) {
             Competencia competencia = cp.getCompetencia();
 
-            if (!tieneFactorEvaluable(competencia)) {
+            if (!tieneFactorEvaluable(
+                    competencia,
+                    configuracion.getCantidadPreguntasPorFactor())) {
                 noEvaluables.add(competencia.getNombre());
             } else {
                 compeDTOLista.add(generarCompetenciaPonderadaDTO(cp));
@@ -134,12 +140,14 @@ public class EvaluadorCandidato {
 
     }
 
-    private boolean tieneFactorEvaluable(Competencia c) {
+    private boolean tieneFactorEvaluable(
+            Competencia c,
+            int cantidadPreguntasPorFactor) {
         List<Factor> factoresCompetencia = factorDAO
                 .findByCompetenciaCodigoAndEliminadoFalseOrderByNroOrdenAsc(c.getCodigo());
 
         for (Factor f : factoresCompetencia) {
-            if (factorEvaluable(f)) {
+            if (factorEvaluable(f, cantidadPreguntasPorFactor)) {
                 return true;
             }
         }
@@ -147,8 +155,9 @@ public class EvaluadorCandidato {
         return false;
     }
 
-    private boolean factorEvaluable(Factor f) {
-        if (preguntaDAO.findByFactorCodigoAndEliminadoFalse(f.getCodigo()).size() >= 2) {
+    private boolean factorEvaluable(Factor f, int cantidadPreguntasPorFactor) {
+        if (preguntaDAO.findByFactorCodigoAndEliminadoFalse(f.getCodigo()).size()
+                >= cantidadPreguntasPorFactor) {
             return true;
         }
 

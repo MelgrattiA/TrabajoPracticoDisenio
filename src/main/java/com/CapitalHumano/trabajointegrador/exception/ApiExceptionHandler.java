@@ -15,6 +15,12 @@ public class ApiExceptionHandler {
         return crearRespuesta(HttpStatus.BAD_REQUEST, excepcion.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ProblemDetail> manejarConflictoDeEstado(
+            IllegalStateException excepcion) {
+        return crearRespuesta(HttpStatus.CONFLICT, excepcion.getMessage());
+    }
+
     @ExceptionHandler(PuestoNoEncontradoException.class)
     public ResponseEntity<ProblemDetail> manejarPuestoNoEncontrado(
             PuestoNoEncontradoException excepcion) {
