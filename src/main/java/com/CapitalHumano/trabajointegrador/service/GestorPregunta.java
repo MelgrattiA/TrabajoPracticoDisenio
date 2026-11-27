@@ -2,11 +2,14 @@ package com.CapitalHumano.trabajointegrador.service;
 
 import org.springframework.stereotype.Service;
 
+import com.CapitalHumano.trabajointegrador.repository.CompetenciaDAO;
 import com.CapitalHumano.trabajointegrador.repository.PreguntaDAO;
 
 import lombok.RequiredArgsConstructor;
 
+import com.CapitalHumano.trabajointegrador.dto.CompetenciaDTO;
 import com.CapitalHumano.trabajointegrador.dto.PreguntaDTO;
+import com.CapitalHumano.trabajointegrador.entity.Competencia;
 import com.CapitalHumano.trabajointegrador.entity.Pregunta;
 
 import java.util.ArrayList;
@@ -16,6 +19,25 @@ import java.util.List;
 @RequiredArgsConstructor 
 public class GestorPregunta { 
     private final PreguntaDAO preguntaDAO;
+    private final CompetenciaDAO competenciaDAO;
+
+    public List<CompetenciaDTO> obtenerCompetencia(){
+        List<Competencia> competenciaLista = competenciaDAO.buscarCompetenciasActivas(); 
+        List<CompetenciaDTO> competenciaDTOs = new ArrayList<CompetenciaDTO>();
+
+        for(Competencia c: competenciaLista){
+            competenciaDTOs.add(generarCompetenciaDTO(c));
+        }
+
+        return competenciaDTOs;
+    }
+
+    public CompetenciaDTO generarCompetenciaDTO(Competencia c){
+        Integer codigo = c.getCodigo();
+        String nombre = c.getNombre();
+
+        return new CompetenciaDTO(codigo, nombre);
+    }
 
     public List<PreguntaDTO> buscarPreguntas( String competencia, String factor, String pregunta){
         String compFiltro = (competencia == null || competencia.isBlank()) ? null : "%" + competencia.trim().toLowerCase() + "%";
