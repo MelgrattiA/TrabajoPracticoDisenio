@@ -1,19 +1,26 @@
 package com.CapitalHumano.trabajointegrador.controller;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.CapitalHumano.trabajointegrador.dto.CandidatoRestauracionPreguntaDTO;
+import com.CapitalHumano.trabajointegrador.dto.CrearPreguntaRequest;
+import com.CapitalHumano.trabajointegrador.dto.PreguntaCreadaDTO;
+import com.CapitalHumano.trabajointegrador.dto.PreguntaDTO;
 import com.CapitalHumano.trabajointegrador.service.GestorPregunta;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import com.CapitalHumano.trabajointegrador.dto.PreguntaDTO;
-
-import java.util.List;
 
 @RestController 
 @RequestMapping("/api/preguntas")
@@ -35,4 +42,17 @@ public class PreguntaController {
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
         }
+
+    @PostMapping
+    public ResponseEntity<PreguntaCreadaDTO> crearPregunta(
+            @Valid @RequestBody CrearPreguntaRequest solicitud) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(gestorPregunta.crearPregunta(solicitud));
+    }
+
+    @PostMapping("/{codigo}/restaurar")
+    public ResponseEntity<CandidatoRestauracionPreguntaDTO> restaurarPregunta(
+            @PathVariable Integer codigo) {
+        return ResponseEntity.ok(gestorPregunta.restaurarPregunta(codigo));
+    }
 }

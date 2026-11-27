@@ -31,6 +31,7 @@ import com.CapitalHumano.trabajointegrador.entity.OpcionRespuesta;
 import com.CapitalHumano.trabajointegrador.entity.PonderacionItem;
 import com.CapitalHumano.trabajointegrador.entity.Pregunta;
 import com.CapitalHumano.trabajointegrador.exception.PreguntaConflictoException;
+import com.CapitalHumano.trabajointegrador.exception.PreguntaNoEncontradaException;
 import com.CapitalHumano.trabajointegrador.repository.CompetenciaDAO;
 import com.CapitalHumano.trabajointegrador.repository.FactorDAO;
 import com.CapitalHumano.trabajointegrador.repository.ItemOpcionDAO;
@@ -215,6 +216,66 @@ public class GestorPregunta {
                 preguntaPersistida.getDescripcion(),
                 opcion.getIdOpcionRespuesta(),
                 ponderacionesRespuesta);
+    }
+
+    @Transactional
+    public CandidatoRestauracionPreguntaDTO restaurarPregunta(
+            Integer codigoPregunta) {
+        if (codigoPregunta == null || codigoPregunta <= 0) {
+            throw new IllegalArgumentException(
+                    "Debe indicar un código de pregunta válido");
+        }
+
+        Pregunta pregunta = preguntaDAO.buscarPorCodigoConBloqueoEscritura(
+                        codigoPregunta)
+                .orElseThrow(() -> new PreguntaNoEncontradaException(
+                        codigoPregunta));
+        if (!Boolean.TRUE.equals(pregunta.getEliminado())) {
+            throw new PreguntaConflictoException(new ConflictoPreguntaDTO(
+                    "PREGUNTA_YA_RESTAURADA",
+                    "ESTADO",
+                    "La pregunta ya fue restaurada",
+                    null));
+        }
+
+        String nombreNormalizado =
+                NormalizadorLiteralesPregunta.normalizarObligatorio(
+                        pregunta.getNombre());
+        String textoNormalizado =
+                NormalizadorLiteralesPregunta.normalizarObligatorio(
+                        pregunta.getPregunta());
+        Integer codigoFactor = pregunta.getFactor().getCodigo();
+
+        boolean nombreDuplicado =
+                preguntaDAO.buscarPreguntaActivaPorNombreYFactor(
+                        nombreNormalizado,
+                        codigoFactor).isPresent();
+        boolean textoDuplicado =
+                preguntaDAO.buscarPreguntaActivaPorTextoYFactor(
+                        textoNormalizado,
+                        codigoFactor).isPresent();
+        if (nombreDuplicado || textoDuplicado) {
+            throw crearConflictoActivo(nombreDuplicado, textoDuplicado);
+        }
+
+        pregunta.setEliminado(false);
+        try {
+            preguntaDAO.saveAndFlush(pregunta);
+        } catch (DataIntegrityViolationException excepcion) {
+            String nombreRestriccion = obtenerNombreRestriccion(excepcion);
+            if (INDICE_NOMBRE_ACTIVO.equals(nombreRestriccion)) {
+                throw crearConflictoActivo(true, false);
+            }
+            if (INDICE_TEXTO_ACTIVO.equals(nombreRestriccion)) {
+                throw crearConflictoActivo(false, true);
+            }
+            throw excepcion;
+        }
+
+        List<PonderacionItem> ponderaciones =
+                ponderacionItemDAO.findByPreguntaCodigoIn(
+                        List.of(pregunta.getCodigo()));
+        return crearCandidatoRestauracion(pregunta, ponderaciones);
     }
 
     private void validarIdentificadores(CrearPreguntaRequest solicitud) {
