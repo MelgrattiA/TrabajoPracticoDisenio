@@ -33,7 +33,6 @@ import lombok.RequiredArgsConstructor;
 public class PreguntaController {
     private final GestorPregunta gestorPregunta;
    
-
     @GetMapping 
     public ResponseEntity<?> buscarPreguntas(
         @RequestParam(required = false) String competencia,
