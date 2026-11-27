@@ -11,6 +11,7 @@ import com.CapitalHumano.trabajointegrador.service.GestorPregunta;
 
 import lombok.RequiredArgsConstructor;
 
+import com.CapitalHumano.trabajointegrador.dto.CompetenciaDTO;
 import com.CapitalHumano.trabajointegrador.dto.PreguntaDTO;
 
 import java.util.List;
@@ -22,6 +23,10 @@ import java.util.List;
 public class PreguntaController {
     private final GestorPregunta gestorPregunta;
    
+    @GetMapping("/competencias")
+    public ResponseEntity<List<CompetenciaDTO>> listarCompetencias() {
+        return ResponseEntity.ok(gestorPregunta.obtenerCompetencia());
+    }
 
     @GetMapping 
     public ResponseEntity<?> buscarPreguntas(
