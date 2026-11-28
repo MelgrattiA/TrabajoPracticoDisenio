@@ -1,8 +1,9 @@
--- Carga de datos iniciales para trabajointegrador.
+-- Carga de datos iniciales para trabajointegrador + fixture de prueba CU026.
 -- Primero inicia la aplicacion para que JPA cree las tablas
 -- (spring.jpa.hibernate.ddl-auto=update). Luego ejecuta:
 --   psql -U admin -h localhost -d gestion_evaluaciones -f inicializar_db_postgres.txt
--- Los IDs son fijos; los conflictos con registros ya cargados se omiten.
+-- Los IDs son fijos; los conflictos con registros ya cargados se omiten o actualizan
+-- segun corresponda, y el cuestionario T0260001 se limpia para poder repetirse.
 -- Este archivo no crea ni borra la base de datos o sus tablas.
 
 \set ON_ERROR_STOP on
@@ -12,17 +13,81 @@ BEGIN;
 
 SET search_path TO public;
 
--- Catalogo fijo definido por el proyecto.
+-- ============================================================================
+-- 1. CATALOGO FIJO Y CONFIGURACION DEL SISTEMA
+-- ============================================================================
 INSERT INTO estado_cuestionario (id_estado_cuestionario, nombre) VALUES
     (1, 'Activo'),
     (2, 'En Proceso'),
     (3, 'Completo'),
     (4, 'Incompleto'),
     (5, 'Sin Contestar')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id_estado_cuestionario) DO NOTHING;
 
--- Datos de demostracion. Las inserciones respetan las claves foraneas:
--- primero entidades independientes y luego las que dependen de ellas.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM (VALUES
+            (1, 'Activo'),
+            (2, 'En Proceso'),
+            (3, 'Completo'),
+            (4, 'Incompleto'),
+            (5, 'Sin Contestar')
+        ) AS esperado(id, nombre)
+        LEFT JOIN estado_cuestionario estado
+          ON estado.id_estado_cuestionario = esperado.id
+        WHERE estado.nombre IS DISTINCT FROM esperado.nombre
+    ) THEN
+        RAISE EXCEPTION
+            'Los estados de cuestionario no coinciden con los IDs requeridos por CU026';
+    END IF;
+END;
+$$;
+
+INSERT INTO configuracion_sistema (
+    id_configuracion,
+    instrucciones_cuestionario,
+    cantidad_preguntas_por_bloque,
+    cantidad_preguntas_por_factor,
+    maximo_accesos,
+    tiempo_maximo_activo_dias,
+    tiempo_maximo_completar_dias
+)
+VALUES (
+    1,
+    'Responda todas las preguntas de cada bloque y seleccione una opción por pregunta.',
+    2,
+    2,
+    3,
+    7,
+    1
+)
+ON CONFLICT (id_configuracion) DO UPDATE SET
+    instrucciones_cuestionario = CASE
+        WHEN BTRIM(configuracion_sistema.instrucciones_cuestionario) = ''
+            THEN EXCLUDED.instrucciones_cuestionario
+        ELSE configuracion_sistema.instrucciones_cuestionario
+    END;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM configuracion_sistema
+        WHERE id_configuracion = 1
+          AND cantidad_preguntas_por_bloque = 2
+          AND cantidad_preguntas_por_factor = 2
+    ) THEN
+        RAISE EXCEPTION
+            'Para este fixture configure 2 preguntas por bloque y 2 por factor';
+    END IF;
+END;
+$$;
+
+-- ============================================================================
+-- 2. DATOS DE DEMOSTRACION BASE
+-- ============================================================================
 INSERT INTO usuario (nombre_usuario, perfil) VALUES
     ('usuario_demo', 'ADMIN')
 ON CONFLICT DO NOTHING;
@@ -197,22 +262,344 @@ VALUES
     ('CUEST-DEMO-001', 'DEV-001', 10, 5.00)
 ON CONFLICT DO NOTHING;
 
--- Sincronizar las identidades luego de insertar IDs explicitos.
+-- Sincronizar secuencias antes del bloque CU026 para que el siguiente ID generado
+-- no colisione con registros ya insertados.
 SELECT setval(pg_get_serial_sequence('public.registro_eliminacion', 'id_registro_eliminacion'),
-              (SELECT MAX(id_registro_eliminacion) FROM registro_eliminacion), true);
+              COALESCE((SELECT MAX(id_registro_eliminacion) FROM registro_eliminacion), 1), true);
 SELECT setval(pg_get_serial_sequence('public.registro_actualizacion_de_estado', 'id_registro_actualizacion'),
-              (SELECT MAX(id_registro_actualizacion) FROM registro_actualizacion_de_estado), true);
+              COALESCE((SELECT MAX(id_registro_actualizacion) FROM registro_actualizacion_de_estado), 1), true);
 SELECT setval(pg_get_serial_sequence('public.opcion_respuesta', 'id_opcion_respuesta'),
-              (SELECT MAX(id_opcion_respuesta) FROM opcion_respuesta), true);
+              COALESCE((SELECT MAX(id_opcion_respuesta) FROM opcion_respuesta), 1), true);
 SELECT setval(pg_get_serial_sequence('public.item_opcion', 'id_item_opcion'),
-              (SELECT MAX(id_item_opcion) FROM item_opcion), true);
+              COALESCE((SELECT MAX(id_item_opcion) FROM item_opcion), 1), true);
 SELECT setval(pg_get_serial_sequence('public.pregunta', 'codigo'),
-              (SELECT MAX(codigo) FROM pregunta), true);
+              COALESCE((SELECT MAX(codigo) FROM pregunta), 1), true);
 SELECT setval(pg_get_serial_sequence('public.bloque_pregunta', 'id_bloque_pregunta'),
-              (SELECT MAX(id_bloque_pregunta) FROM bloque_pregunta), true);
+              COALESCE((SELECT MAX(id_bloque_pregunta) FROM bloque_pregunta), 1), true);
 SELECT setval(pg_get_serial_sequence('public.pregunta_bloque', 'id_pregunta_bloque'),
-              (SELECT MAX(id_pregunta_bloque) FROM pregunta_bloque), true);
+              COALESCE((SELECT MAX(id_pregunta_bloque) FROM pregunta_bloque), 1), true);
 SELECT setval(pg_get_serial_sequence('public.ponderacion_item', 'id_ponderacion_item'),
-              (SELECT MAX(id_ponderacion_item) FROM ponderacion_item), true);
+              COALESCE((SELECT MAX(id_ponderacion_item) FROM ponderacion_item), 1), true);
+
+-- ============================================================================
+-- 3. FIXTURE DE PRUEBA CU026 (CLAVE: T0260001)
+-- ============================================================================
+INSERT INTO candidato (
+    nro_candidato,
+    apellido,
+    nombre,
+    tipo_documento,
+    nro_documento,
+    fecha_nacimiento,
+    genero,
+    nacionalidad,
+    email,
+    escolaridad,
+    eliminado
+)
+VALUES (
+    99002601,
+    'Prueba CU026',
+    'Candidato',
+    'DNI',
+    99002601,
+    DATE '1995-01-15',
+    'No especificado',
+    'Argentina',
+    'cu026.prueba@example.invalid',
+    'Universitario',
+    false
+)
+ON CONFLICT (nro_candidato) DO UPDATE SET
+    apellido = EXCLUDED.apellido,
+    nombre = EXCLUDED.nombre,
+    tipo_documento = EXCLUDED.tipo_documento,
+    nro_documento = EXCLUDED.nro_documento,
+    fecha_nacimiento = EXCLUDED.fecha_nacimiento,
+    genero = EXCLUDED.genero,
+    nacionalidad = EXCLUDED.nacionalidad,
+    email = EXCLUDED.email,
+    escolaridad = EXCLUDED.escolaridad,
+    eliminado = false;
+
+INSERT INTO puesto (
+    codigo_puesto,
+    nombre_puesto,
+    descripcion,
+    empresa,
+    eliminado
+)
+VALUES (
+    'TEST-CU026',
+    'Puesto de prueba CU026',
+    'Puesto creado exclusivamente para probar el cuestionario.',
+    'Empresa de prueba',
+    false
+)
+ON CONFLICT (codigo_puesto) DO UPDATE SET
+    nombre_puesto = EXCLUDED.nombre_puesto,
+    descripcion = EXCLUDED.descripcion,
+    empresa = EXCLUDED.empresa,
+    eliminado = false;
+
+INSERT INTO competencia (codigo, nombre, descripcion, eliminado)
+VALUES (
+    99002601,
+    'Competencia de prueba CU026',
+    'Competencia para probar cálculo y respuestas.',
+    false
+)
+ON CONFLICT (codigo) DO UPDATE SET
+    nombre = EXCLUDED.nombre,
+    descripcion = EXCLUDED.descripcion,
+    eliminado = false;
+
+INSERT INTO caracteristica_puesto (
+    codigo_puesto,
+    codigo_competencia,
+    ponderacion_minima
+)
+SELECT 'TEST-CU026', 99002601, 0
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM caracteristica_puesto
+    WHERE codigo_puesto = 'TEST-CU026'
+      AND codigo_competencia = 99002601
+);
+
+UPDATE caracteristica_puesto
+SET ponderacion_minima = 0
+WHERE codigo_puesto = 'TEST-CU026'
+  AND codigo_competencia = 99002601;
+
+INSERT INTO factor (
+    codigo,
+    nombre,
+    descripcion,
+    nro_orden,
+    codigo_competencia,
+    eliminado
+)
+VALUES
+    (99002601, 'Factor 1 de prueba CU026', 'Primer factor de prueba.', 1, 99002601, false),
+    (99002602, 'Factor 2 de prueba CU026', 'Segundo factor de prueba.', 2, 99002601, false)
+ON CONFLICT (codigo) DO UPDATE SET
+    nombre = EXCLUDED.nombre,
+    descripcion = EXCLUDED.descripcion,
+    nro_orden = EXCLUDED.nro_orden,
+    codigo_competencia = EXCLUDED.codigo_competencia,
+    eliminado = false;
+
+INSERT INTO opcion_respuesta (nombre, descripcion, eliminado)
+SELECT
+    'TEST-CU026-LIKERT',
+    'Escala de opciones para probar CU026.',
+    false
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM opcion_respuesta
+    WHERE nombre = 'TEST-CU026-LIKERT'
+);
+
+UPDATE opcion_respuesta
+SET
+    descripcion = 'Escala de opciones para probar CU026.',
+    eliminado = false
+WHERE nombre = 'TEST-CU026-LIKERT';
+
+INSERT INTO item_opcion (
+    orden_visualizacion,
+    descripcion,
+    id_opcion_respuesta
+)
+SELECT
+    opciones.orden,
+    opciones.descripcion,
+    opcion.id_opcion_respuesta
+FROM opcion_respuesta opcion
+CROSS JOIN (
+    VALUES
+        (1, 'Nunca'),
+        (2, 'A veces'),
+        (3, 'Frecuentemente'),
+        (4, 'Siempre')
+) AS opciones(orden, descripcion)
+WHERE opcion.nombre = 'TEST-CU026-LIKERT'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM item_opcion io
+      WHERE io.id_opcion_respuesta = opcion.id_opcion_respuesta
+        AND io.orden_visualizacion = opciones.orden
+  );
+
+UPDATE item_opcion io
+SET descripcion = opciones.descripcion
+FROM opcion_respuesta opcion
+CROSS JOIN (
+    VALUES
+        (1, 'Nunca'),
+        (2, 'A veces'),
+        (3, 'Frecuentemente'),
+        (4, 'Siempre')
+) AS opciones(orden, descripcion)
+WHERE opcion.nombre = 'TEST-CU026-LIKERT'
+  AND io.id_opcion_respuesta = opcion.id_opcion_respuesta
+  AND io.orden_visualizacion = opciones.orden;
+
+INSERT INTO pregunta (
+    codigo,
+    nombre,
+    pregunta,
+    descripcion,
+    codigo_factor,
+    id_opcion_respuesta,
+    eliminado
+)
+SELECT
+    preguntas.codigo,
+    preguntas.nombre,
+    preguntas.texto,
+    preguntas.texto,
+    preguntas.codigo_factor,
+    opcion.id_opcion_respuesta,
+    false
+FROM (
+    VALUES
+        (99002601, 'Pregunta 1', '¿Organizás tus tareas antes de comenzar?', 99002601),
+        (99002602, 'Pregunta 2', '¿Revisás tu trabajo antes de entregarlo?', 99002601),
+        (99002603, 'Pregunta 3', '¿Colaborás con otras personas para resolver problemas?', 99002602),
+        (99002604, 'Pregunta 4', '¿Compartís información útil con tu equipo?', 99002602)
+) AS preguntas(codigo, nombre, texto, codigo_factor)
+CROSS JOIN LATERAL (
+    SELECT id_opcion_respuesta
+    FROM opcion_respuesta
+    WHERE nombre = 'TEST-CU026-LIKERT'
+    ORDER BY id_opcion_respuesta
+    LIMIT 1
+) AS opcion
+ON CONFLICT (codigo) DO UPDATE SET
+    nombre = EXCLUDED.nombre,
+    pregunta = EXCLUDED.pregunta,
+    descripcion = EXCLUDED.descripcion,
+    codigo_factor = EXCLUDED.codigo_factor,
+    id_opcion_respuesta = EXCLUDED.id_opcion_respuesta,
+    eliminado = false;
+
+INSERT INTO ponderacion_item (ponderacion, codigo_pregunta, id_item_opcion)
+SELECT
+    opciones.orden_visualizacion - 1,
+    preguntas.codigo,
+    opciones.id_item_opcion
+FROM pregunta preguntas
+JOIN opcion_respuesta tipo
+  ON tipo.id_opcion_respuesta = preguntas.id_opcion_respuesta
+JOIN item_opcion opciones
+  ON opciones.id_opcion_respuesta = tipo.id_opcion_respuesta
+WHERE tipo.nombre = 'TEST-CU026-LIKERT'
+  AND preguntas.codigo BETWEEN 99002601 AND 99002604
+  AND NOT EXISTS (
+      SELECT 1
+      FROM ponderacion_item pi
+      WHERE pi.codigo_pregunta = preguntas.codigo
+        AND pi.id_item_opcion = opciones.id_item_opcion
+  );
+
+UPDATE ponderacion_item pi
+SET ponderacion = opciones.orden_visualizacion - 1
+FROM pregunta preguntas
+JOIN opcion_respuesta tipo
+  ON tipo.id_opcion_respuesta = preguntas.id_opcion_respuesta
+JOIN item_opcion opciones
+  ON opciones.id_opcion_respuesta = tipo.id_opcion_respuesta
+WHERE tipo.nombre = 'TEST-CU026-LIKERT'
+  AND preguntas.codigo BETWEEN 99002601 AND 99002604
+  AND pi.codigo_pregunta = preguntas.codigo
+  AND pi.id_item_opcion = opciones.id_item_opcion;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM cuestionario
+        WHERE nro_candidato = 99002601
+          AND estado_id IN (1, 2)
+          AND clave <> 'T0260001'
+    ) THEN
+        RAISE EXCEPTION
+            'El candidato de prueba ya tiene otro cuestionario Activo o En Proceso';
+    END IF;
+END;
+$$;
+
+DELETE FROM resultado_competencia
+WHERE clave_cuestionario = 'T0260001';
+
+DELETE FROM pregunta_bloque pb
+USING bloque_pregunta bp
+WHERE pb.id_bloque_pregunta = bp.id_bloque_pregunta
+  AND bp.clave_cuestionario = 'T0260001';
+
+DELETE FROM bloque_pregunta
+WHERE clave_cuestionario = 'T0260001';
+
+INSERT INTO cuestionario (
+    clave,
+    fecha_creacion,
+    cantidad_accesos,
+    nro_candidato,
+    codigo_puesto,
+    estado_id
+)
+VALUES (
+    'T0260001',
+    CURRENT_TIMESTAMP,
+    0,
+    99002601,
+    'TEST-CU026',
+    1
+)
+ON CONFLICT (clave) DO UPDATE SET
+    fecha_creacion = EXCLUDED.fecha_creacion,
+    fecha_inicio = NULL,
+    fecha_ultimo_ingreso = NULL,
+    fecha_finalizacion = NULL,
+    cantidad_accesos = 0,
+    puntaje_final = NULL,
+    nro_candidato = EXCLUDED.nro_candidato,
+    codigo_puesto = EXCLUDED.codigo_puesto,
+    estado_id = EXCLUDED.estado_id;
+
+-- ============================================================================
+-- 4. SINCRONIZACION FINAL DE SECUENCIAS
+-- ============================================================================
+SELECT setval(pg_get_serial_sequence('public.registro_eliminacion', 'id_registro_eliminacion'),
+              COALESCE((SELECT MAX(id_registro_eliminacion) FROM registro_eliminacion), 1), true);
+SELECT setval(pg_get_serial_sequence('public.registro_actualizacion_de_estado', 'id_registro_actualizacion'),
+              COALESCE((SELECT MAX(id_registro_actualizacion) FROM registro_actualizacion_de_estado), 1), true);
+SELECT setval(pg_get_serial_sequence('public.opcion_respuesta', 'id_opcion_respuesta'),
+              COALESCE((SELECT MAX(id_opcion_respuesta) FROM opcion_respuesta), 1), true);
+SELECT setval(pg_get_serial_sequence('public.item_opcion', 'id_item_opcion'),
+              COALESCE((SELECT MAX(id_item_opcion) FROM item_opcion), 1), true);
+SELECT setval(pg_get_serial_sequence('public.pregunta', 'codigo'),
+              COALESCE((SELECT MAX(codigo) FROM pregunta), 1), true);
+SELECT setval(pg_get_serial_sequence('public.bloque_pregunta', 'id_bloque_pregunta'),
+              COALESCE((SELECT MAX(id_bloque_pregunta) FROM bloque_pregunta), 1), true);
+SELECT setval(pg_get_serial_sequence('public.pregunta_bloque', 'id_pregunta_bloque'),
+              COALESCE((SELECT MAX(id_pregunta_bloque) FROM pregunta_bloque), 1), true);
+SELECT setval(pg_get_serial_sequence('public.ponderacion_item', 'id_ponderacion_item'),
+              COALESCE((SELECT MAX(id_ponderacion_item) FROM ponderacion_item), 1), true);
 
 COMMIT;
+
+SELECT
+    c.clave,
+    c.nro_candidato,
+    ca.nombre,
+    ca.apellido,
+    c.codigo_puesto,
+    ec.nombre AS estado
+FROM cuestionario c
+JOIN candidato ca ON ca.nro_candidato = c.nro_candidato
+JOIN estado_cuestionario ec
+  ON ec.id_estado_cuestionario = c.estado_id
+WHERE c.clave = 'T0260001';
