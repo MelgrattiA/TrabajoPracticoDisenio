@@ -35,3 +35,4 @@ Trabajo Practico de Diseño de Sistemas entrega 7 y 8
 - Evaluaciones: http://localhost:3000/api/evaluar
 - Preguntas: http://localhost:3000/api/preguntas
 - Orden Merito: http://localhost:3000/api/orden-merito
+- Completar Cuestionario: http://localhost:3000/api/cuestionario/instrucciones?clave=
